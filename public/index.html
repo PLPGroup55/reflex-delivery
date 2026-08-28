@@ -72,9 +72,6 @@
 </head>
 <body>
 
-  <!-- AUDIO FOR NOTIFICATION -->
-  <audio id="notifSound"></audio>
-
   <!-- NOTIFICATION POPUP -->
   <div id="notificationPopup" class="notification-popup">
     <div class="notif-header">
@@ -90,7 +87,7 @@
     <p class="subtitle">Delivery Tracking System</p>
     <div id="authMessage"></div>
     <form id="authForm">
-      <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe"></div>
+      <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe" required></div>
       <div class="form-group"><label>Email</label><input type="email" id="email" placeholder="you@example.com" required></div>
       <div class="form-group"><label>Password</label><input type="password" id="password" placeholder="Enter password" required></div>
       <div class="form-group" id="roleGroup" style="display:none;"><label>Role</label><select id="role"><option value="retailer">Retailer Staff</option><option value="dispatcher">Dispatcher</option><option value="rider">Rider</option></select></div>
@@ -112,10 +109,11 @@
     <div class="main-content retailer-grid">
       <div class="panel">
         <h2>Create New Delivery</h2>
-        <input id="customerName" placeholder="Grace Wambui">
-        <input id="customerPhone" placeholder="0712345678">
-        <input id="address" placeholder="Moi Avenue, Nairobi">
-        <input id="itemDescription" placeholder="Phone charger">
+        <!-- ✅ ADDED 'required' TO PREVENT EMPTY SUBMISSIONS -->
+        <input id="customerName" placeholder="Customer Name (e.g. Grace Wambui)" required>
+        <input id="customerPhone" placeholder="Phone Number (e.g. 0712345678)" required>
+        <input id="address" placeholder="Delivery Address (e.g. Moi Avenue)" required>
+        <input id="itemDescription" placeholder="Item Description (e.g. Phone charger)" required>
         <button onclick="logDelivery()">Log Delivery</button>
         <div class="role-actions retailer">✅ You have full access to create deliveries</div>
       </div>
@@ -151,7 +149,7 @@
   <!-- ================= RIDER DASHBOARD ================= -->
   <div id="riderDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>️ Rider Dashboard</h1><small style="color:#94a3b8;">Accept jobs and manage deliveries</small></div>
+      <div><h1>🏍️ Rider Dashboard</h1><small style="color:#94a3b8;">Accept jobs and manage deliveries</small></div>
       <div class="header-controls">
         <span id="riderName" style="font-weight:bold;"></span>
         <span class="role-badge role-rider">RIDER</span>
@@ -173,7 +171,7 @@
         <div id="riderActiveJobs"></div>
       </div>
       <div class="panel">
-        <h2> Open Requests</h2>
+        <h2>📢 Open Requests</h2>
         <small>Deliveries waiting for a rider</small>
         <div id="riderOpenRequests"></div>
       </div>
@@ -222,7 +220,6 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         
-        // ✅ Show success and auto-redirect to login
         showMessage('✅ Signup successful! Redirecting to login...', 'success');
         setTimeout(() => {
           isSignup = false;
@@ -268,10 +265,29 @@
     refreshAll();
   }
 
+  // 🛡️ UPDATED: Added validation to prevent empty deliveries
   async function logDelivery() {
-    const body = { customerName: document.getElementById("customerName").value, customerPhone: document.getElementById("customerPhone").value, address: document.getElementById("address").value, itemDescription: document.getElementById("itemDescription").value };
+    const name = document.getElementById("customerName").value.trim();
+    const phone = document.getElementById("customerPhone").value.trim();
+    const address = document.getElementById("address").value.trim();
+    const item = document.getElementById("itemDescription").value.trim();
+
+    // Check if any field is empty
+    if (!name || !phone || !address || !item) {
+      alert("⚠️ Please enter all client details before logging a delivery!");
+      return; // Stop the function here
+    }
+
+    const body = { customerName: name, customerPhone: phone, address: address, itemDescription: item };
     const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const delivery = await res.json();
+    
+    // Clear the form after successful submission
+    document.getElementById("customerName").value = "";
+    document.getElementById("customerPhone").value = "";
+    document.getElementById("address").value = "";
+    document.getElementById("itemDescription").value = "";
+
     alert(`Delivery #${delivery.id} logged successfully! Riders have been notified.`);
     refreshAll();
   }
