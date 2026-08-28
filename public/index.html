@@ -16,11 +16,13 @@
   .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px; }
   input, button, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; font-size: 14px; }
   input::placeholder { color: #64748b; font-style: italic; }
-  button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; }
+  button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; transition: all 0.2s; }
   button:hover { background: #0ea5e9; }
+  button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
   .btn-accept { background: #10b981; }
   .btn-accept:hover { background: #059669; }
   .toggle-auth { text-align: center; margin-top: 16px; color: #38bdf8; cursor: pointer; font-size: 13px; }
+  .toggle-auth:hover { text-decoration: underline; }
   .error-msg { color: #f87171; text-align: center; margin-bottom: 12px; }
   .success-msg { color: #4ade80; text-align: center; margin-bottom: 12px; }
 
@@ -183,6 +185,17 @@
   let currentUser = null;
   let isSignup = false;
 
+  // 🛡️ SESSION PERSISTENCE: Check if user is already logged in from a previous session
+  const savedToken = localStorage.getItem('reflex_token');
+  const savedUser = localStorage.getItem('reflex_user');
+  if (savedToken && savedUser) {
+    currentToken = savedToken;
+    currentUser = JSON.parse(savedUser);
+    // If we have a saved session, skip the login screen entirely
+    document.getElementById('authSection').style.display = 'none';
+    showDashboard();
+  }
+
   // Audio Context for generating a reliable beep sound
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playBeep() {
@@ -198,6 +211,7 @@
     setTimeout(() => oscillator.stop(), 200);
   }
 
+  // Toggle between Login and Signup forms
   document.getElementById('toggleAuth').addEventListener('click', () => {
     isSignup = !isSignup;
     document.getElementById('authBtn').textContent = isSignup ? 'Sign Up' : 'Login';
@@ -205,53 +219,108 @@
     document.getElementById('nameGroup').style.display = isSignup ? 'block' : 'none';
     document.getElementById('roleGroup').style.display = isSignup ? 'block' : 'none';
     document.getElementById('authMessage').textContent = '';
+    document.getElementById('authForm').reset();
   });
 
+  // Handle form submission (both login and signup)
   document.getElementById('authForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent page reload
+    
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
+    const btn = document.getElementById('authBtn');
+    
+    // 🛡️ LOADING STATE: Disable button and change text so user knows it's working
+    const originalText = btn.textContent;
+    btn.textContent = isSignup ? 'Creating Account...' : 'Logging in... (Please wait)';
+    btn.disabled = true;
+    document.getElementById('authMessage').textContent = '';
+
     try {
       if (isSignup) {
+        // SIGN UP FLOW
         const name = document.getElementById('name').value;
         const role = document.getElementById('role').value;
 
-        // 1. Create the account
-        const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
+        const res = await fetch('/auth/signup', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ name, email, password, role }) 
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        showMessage('✅ Account created! Logging you in...', 'success');
-
-        // 2. Automatically log them in immediately
-        const loginRes = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        // Automatically log them in immediately
+        const loginRes = await fetch('/auth/login', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ email, password }) 
+        });
         const loginData = await loginRes.json();
         if (!loginRes.ok) throw new Error(loginData.error);
 
         currentToken = loginData.token;
         currentUser = loginData.user;
+        
+        // 🛡️ SAVE TO LOCAL STORAGE so they stay logged in on refresh
+        localStorage.setItem('reflex_token', currentToken);
+        localStorage.setItem('reflex_user', JSON.stringify(currentUser));
+        
         showDashboard();
 
       } else {
-        // Normal login flow
-        const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        // LOGIN FLOW
+        const res = await fetch('/auth/login', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ email, password }) 
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        currentToken = data.token; currentUser = data.user; showDashboard();
+        
+        currentToken = data.token; 
+        currentUser = data.user; 
+        
+        // ️ SAVE TO LOCAL STORAGE
+        localStorage.setItem('reflex_token', currentToken);
+        localStorage.setItem('reflex_user', JSON.stringify(currentUser));
+        
+        showDashboard();
       }
-    } catch (err) { showMessage(err.message, 'error'); }
+    } catch (err) { 
+      showMessage('Error: ' + err.message + ' (If server is sleeping, please wait 30s and try again)', 'error'); 
+      console.error('Auth error:', err);
+    } finally {
+      // 🛡️ RESTORE BUTTON
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
   });
 
-  function showMessage(msg, type) { const el = document.getElementById('authMessage'); el.textContent = msg; el.className = type + '-msg'; }
+  function showMessage(msg, type) { 
+    const el = document.getElementById('authMessage'); 
+    el.textContent = msg; 
+    el.className = type + '-msg'; 
+  }
   
   function logout() { 
-    currentToken = null; currentUser = null; 
+    currentToken = null; 
+    currentUser = null; 
+    // 🛡️ CLEAR LOCAL STORAGE
+    localStorage.removeItem('reflex_token');
+    localStorage.removeItem('reflex_user');
+    
     document.querySelectorAll('.dashboard-container').forEach(d => d.style.display = 'none');
     document.getElementById('authSection').style.display = 'block'; 
     document.getElementById('authForm').reset(); 
   }
   
-  function getAuthHeaders() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }; }
+  function getAuthHeaders() { 
+    return { 
+      'Content-Type': 'application/json', 
+      'Authorization': `Bearer ${currentToken}` 
+    }; 
+  }
 
   function showDashboard() {
     document.getElementById('authSection').style.display = 'none';
