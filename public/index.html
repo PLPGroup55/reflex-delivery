@@ -99,7 +99,7 @@
   <!-- ================= RETAILER DASHBOARD ================= -->
   <div id="retailerDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1> Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
+      <div><h1>📦 Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
       <div class="header-controls">
         <span id="retailerName" style="font-weight:bold;"></span>
         <span class="role-badge role-retailer">RETAILER</span>
@@ -215,23 +215,25 @@
       if (isSignup) {
         const name = document.getElementById('name').value;
         const role = document.getElementById('role').value;
+
+        // 1. Create the account
         const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        
-        // ✅ FIXED: Auto-redirect to login after signup
-        showMessage('✅ Signup successful! Redirecting to login...', 'success');
-        setTimeout(() => {
-          isSignup = false;
-          document.getElementById('authBtn').textContent = 'Login';
-          document.getElementById('toggleAuth').textContent = "Don't have an account? Sign up";
-          document.getElementById('nameGroup').style.display = 'none';
-          document.getElementById('roleGroup').style.display = 'none';
-          document.getElementById('authMessage').textContent = '';
-          document.getElementById('authForm').reset();
-        }, 1500);
-        
+
+        showMessage('✅ Account created! Logging you in...', 'success');
+
+        // 2. Automatically log them in immediately
+        const loginRes = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const loginData = await loginRes.json();
+        if (!loginRes.ok) throw new Error(loginData.error);
+
+        currentToken = loginData.token;
+        currentUser = loginData.user;
+        showDashboard();
+
       } else {
+        // Normal login flow
         const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
@@ -276,7 +278,7 @@
     const item = document.getElementById("itemDescription").value.trim();
 
     if (!name || !phone || !address || !item) {
-      alert("️ Please enter all client details before logging a delivery!");
+      alert("⚠️ Please enter all client details before logging a delivery!");
       return;
     }
 
