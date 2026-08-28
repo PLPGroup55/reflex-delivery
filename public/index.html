@@ -99,7 +99,7 @@
   <!-- ================= RETAILER DASHBOARD ================= -->
   <div id="retailerDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>📦 Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
+      <div><h1> Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
       <div class="header-controls">
         <span id="retailerName" style="font-weight:bold;"></span>
         <span class="role-badge role-retailer">RETAILER</span>
@@ -109,7 +109,6 @@
     <div class="main-content retailer-grid">
       <div class="panel">
         <h2>Create New Delivery</h2>
-        <!-- ✅ ADDED 'required' TO PREVENT EMPTY SUBMISSIONS -->
         <input id="customerName" placeholder="Customer Name (e.g. Grace Wambui)" required>
         <input id="customerPhone" placeholder="Phone Number (e.g. 0712345678)" required>
         <input id="address" placeholder="Delivery Address (e.g. Moi Avenue)" required>
@@ -171,7 +170,7 @@
         <div id="riderActiveJobs"></div>
       </div>
       <div class="panel">
-        <h2>📢 Open Requests</h2>
+        <h2> Open Requests</h2>
         <small>Deliveries waiting for a rider</small>
         <div id="riderOpenRequests"></div>
       </div>
@@ -220,11 +219,16 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         
+        // ✅ FIXED: Auto-redirect to login after signup
         showMessage('✅ Signup successful! Redirecting to login...', 'success');
         setTimeout(() => {
           isSignup = false;
-          document.getElementById('toggleAuth').click();
-          document.getElementById('authBtn').focus();
+          document.getElementById('authBtn').textContent = 'Login';
+          document.getElementById('toggleAuth').textContent = "Don't have an account? Sign up";
+          document.getElementById('nameGroup').style.display = 'none';
+          document.getElementById('roleGroup').style.display = 'none';
+          document.getElementById('authMessage').textContent = '';
+          document.getElementById('authForm').reset();
         }, 1500);
         
       } else {
@@ -265,24 +269,21 @@
     refreshAll();
   }
 
-  // 🛡️ UPDATED: Added validation to prevent empty deliveries
   async function logDelivery() {
     const name = document.getElementById("customerName").value.trim();
     const phone = document.getElementById("customerPhone").value.trim();
     const address = document.getElementById("address").value.trim();
     const item = document.getElementById("itemDescription").value.trim();
 
-    // Check if any field is empty
     if (!name || !phone || !address || !item) {
-      alert("⚠️ Please enter all client details before logging a delivery!");
-      return; // Stop the function here
+      alert("️ Please enter all client details before logging a delivery!");
+      return;
     }
 
     const body = { customerName: name, customerPhone: phone, address: address, itemDescription: item };
     const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const delivery = await res.json();
     
-    // Clear the form after successful submission
     document.getElementById("customerName").value = "";
     document.getElementById("customerPhone").value = "";
     document.getElementById("address").value = "";
