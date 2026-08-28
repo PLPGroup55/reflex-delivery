@@ -6,7 +6,9 @@
 <script src="/socket.io/socket.io.js"></script>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 0; }
+  
+  /* Auth Styles */
   .auth-container { max-width: 450px; margin: 80px auto; background: #1e293b; padding: 32px; border-radius: 12px; border: 1px solid #334155; }
   .auth-container h1 { color: #38bdf8; text-align: center; margin-bottom: 8px; }
   .auth-container .subtitle { text-align: center; color: #94a3b8; margin-bottom: 24px; }
@@ -20,48 +22,72 @@
   .toggle-auth { text-align: center; margin-top: 16px; color: #38bdf8; cursor: pointer; font-size: 13px; }
   .error-msg { color: #f87171; text-align: center; margin-bottom: 12px; }
   .success-msg { color: #4ade80; text-align: center; margin-bottom: 12px; }
-  
-  .dashboard { display: none; }
+
+  /* Dashboard Layouts */
+  .dashboard-container { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 16px; background: #1e293b; border-radius: 12px; border: 1px solid #334155; }
-  .header h1 { color: #38bdf8; margin: 0; }
+  .header h1 { color: #38bdf8; margin: 0; font-size: 20px; }
   .header-controls { display: flex; align-items: center; gap: 16px; }
   .role-badge { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
   .role-retailer { background: #7c3aed; color: #ddd6fe; }
   .role-dispatcher { background: #059669; color: #a7f3d0; }
   .role-rider { background: #ea580c; color: #fed7aa; }
   .logout-btn { background: #dc2626; color: white; width: auto; padding: 8px 16px; margin: 0; }
+
+  .main-content { display: grid; gap: 20px; }
+  /* Retailer: 2 columns (Form | List) */
+  .retailer-grid { grid-template-columns: 1fr 1.5fr; }
+  /* Dispatcher & Rider: 2 columns (Main | Side) */
+  .two-col-grid { grid-template-columns: 2fr 1fr; }
   
-  .current-mode { background: #1e3a5f; border: 1px solid #38bdf8; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-  .current-mode h3 { margin: 0 0 4px 0; color: #38bdf8; font-size: 16px; }
-  .current-mode p { margin: 0; color: #94a3b8; font-size: 13px; }
-  
-  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  .panel { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; transition: all 0.3s ease; }
-  .panel.active-role { border: 2px solid #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
-  .panel h2 { margin-top: 0; font-size: 16px; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 8px; }
-  .role-actions { margin-top: 12px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px; text-align: center; }
+  .panel { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
+  .panel h2 { margin-top: 0; font-size: 18px; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
+  .role-actions { margin-top: 12px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px; text-align: center; margin-bottom: 15px;}
   .role-actions.retailer { background: #2e1065; border: 1px solid #7c3aed; }
   .role-actions.dispatcher { background: #064e3b; border: 1px solid #059669; }
   .role-actions.rider { background: #7c2d12; border: 1px solid #ea580c; }
-  .role-actions.hidden { display: none; }
-  
-  button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
-  .delivery-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 13px; }
-  .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+
+  .delivery-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
+  .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-left: 8px;}
   .status-unassigned { background: #7f1d1d; color: #fecaca; }
   .status-assigned { background: #78350f; color: #fed7aa; }
   .status-picked_up { background: #1e3a5f; color: #93c5fd; }
   .status-delivered { background: #14532d; color: #86efac; }
-  .rider-tag { color: #a78bfa; font-weight: bold; }
-  .code-box { background: #1e3a5f; border: 2px dashed #38bdf8; padding: 4px 8px; border-radius: 6px; font-weight: bold; color: #38bdf8; }
-  .log { height: 120px; overflow-y: auto; background: #0f172a; border-radius: 8px; padding: 8px; font-size: 12px; color: #64748b; margin-top: 16px; }
+  .code-box { background: #1e3a5f; border: 2px dashed #38bdf8; padding: 4px 8px; border-radius: 6px; font-weight: bold; color: #38bdf8; font-family: monospace;}
+  
+  .section-title { font-size: 14px; color: #94a3b8; margin: 20px 0 10px 0; border-bottom: 1px solid #334155; padding-bottom: 5px; }
   small { color: #64748b; }
-  .section-title { font-size: 13px; color: #94a3b8; margin: 16px 0 8px 0; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+
+  /* Notification Popup Styles */
+  .notification-popup {
+    position: fixed; top: 20px; right: 20px; background: #1e293b; border: 2px solid #38bdf8;
+    border-radius: 12px; padding: 16px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    transform: translateX(400px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+  }
+  .notification-popup.show { transform: translateX(0); }
+  .notif-header { font-weight: bold; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+  .notif-body { font-size: 13px; color: #e2e8f0; }
+  .notif-close { cursor: pointer; color: #94a3b8; font-size: 18px; }
 </style>
 </head>
 <body>
 
-  <!-- LOGIN SCREEN -->
+  <!-- AUDIO FOR NOTIFICATION -->
+  <!-- A short, pleasant "ding" sound encoded in base64 so it works offline/anywhere -->
+  <audio id="notifSound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio> 
+  <!-- Note: The above is a placeholder. We will generate a real beep in JS to be safe. -->
+
+  <!-- NOTIFICATION POPUP -->
+  <div id="notificationPopup" class="notification-popup">
+    <div class="notif-header">
+      <span>🔔 New Delivery Request!</span>
+      <span class="notif-close" onclick="hideNotification()">×</span>
+    </div>
+    <div class="notif-body" id="notifMessage">Loading...</div>
+  </div>
+
+  <!-- AUTH SECTION -->
   <div id="authSection" class="auth-container">
     <h1>🚀 Reflex</h1>
     <p class="subtitle">Delivery Tracking System</p>
@@ -76,73 +102,85 @@
     <div class="toggle-auth" id="toggleAuth">Don't have an account? Sign up</div>
   </div>
 
-  <!-- DASHBOARD (Visible after login) -->
-  <div id="dashboardSection" class="dashboard">
+  <!-- ================= RETAILER DASHBOARD ================= -->
+  <div id="retailerDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>🚀 Reflex Dashboard</h1><small style="color:#94a3b8;">Live delivery tracking - Interconnected views</small></div>
+      <div><h1> Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
       <div class="header-controls">
-        <span id="userNameDisplay" style="color:#e2e8f0; font-weight:bold;"></span>
-        <span id="userRole" class="role-badge">ROLE</span>
+        <span id="retailerName" style="font-weight:bold;"></span>
+        <span class="role-badge role-retailer">RETAILER</span>
         <button class="logout-btn" onclick="logout()">Logout</button>
       </div>
     </div>
-
-    <div id="currentModeDisplay" class="current-mode">
-      <h3 id="currentModeTitle">Dashboard</h3>
-      <p id="currentModeDesc">Loading...</p>
-    </div>
-
-    <div class="grid">
-      <!-- RETAILER PANEL -->
-      <div class="panel" id="retailerPanel">
-        <h2>📦 Retailer Staff</h2>
-        <small>Log a new delivery request</small>
+    <div class="main-content retailer-grid">
+      <div class="panel">
+        <h2>Create New Delivery</h2>
         <input id="customerName" placeholder="Customer name" value="Grace Wambui">
         <input id="customerPhone" placeholder="Phone" value="0712345678">
         <input id="address" placeholder="Address" value="Moi Avenue, Nairobi">
         <input id="itemDescription" placeholder="Item" value="Phone charger">
-        <button id="logDeliveryBtn" onclick="logDelivery()">Log Delivery</button>
-        <div class="role-actions retailer hidden" id="retailerActionMsg">✅ You can create deliveries</div>
+        <button onclick="logDelivery()">Log Delivery</button>
+        <div class="role-actions retailer">✅ You have full access to create deliveries</div>
+      </div>
+      <div class="panel">
+        <h2>All Deliveries</h2>
         <div id="retailerDeliveries"></div>
       </div>
+    </div>
+  </div>
 
-      <!-- DISPATCHER PANEL -->
-      <div class="panel" id="dispatcherPanel">
-        <h2>🗺️ Dispatcher View</h2>
-        <small>All deliveries & rider availability</small>
-        <div class="role-actions dispatcher hidden" id="dispatcherActionMsg">👁️ View-only: Monitor all deliveries</div>
+  <!-- ================= DISPATCHER DASHBOARD ================= -->
+  <div id="dispatcherDashboard" class="dashboard-container">
+    <div class="header">
+      <div><h1>️ Dispatcher Dashboard</h1><small style="color:#94a3b8;">Monitor operations and rider status</small></div>
+      <div class="header-controls">
+        <span id="dispatcherName" style="font-weight:bold;"></span>
+        <span class="role-badge role-dispatcher">DISPATCHER</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+    <div class="main-content two-col-grid">
+      <div class="panel">
+        <h2>All Active Deliveries</h2>
         <div id="dispatcherDeliveries"></div>
-        <h2 style="margin-top:16px;">🏍️ Riders</h2>
+      </div>
+      <div class="panel">
+        <h2>Rider Fleet Status</h2>
         <div id="riderList"></div>
       </div>
+    </div>
+  </div>
 
-      <!-- RIDER PANEL -->
-      <div class="panel" id="riderPanel">
-        <h2>🏍️ Rider View</h2>
-        <small>Accept requests and manage jobs</small>
+  <!-- ================= RIDER DASHBOARD ================= -->
+  <div id="riderDashboard" class="dashboard-container">
+    <div class="header">
+      <div><h1>🏍️ Rider Dashboard</h1><small style="color:#94a3b8;">Accept jobs and manage deliveries</small></div>
+      <div class="header-controls">
+        <span id="riderName" style="font-weight:bold;"></span>
+        <span class="role-badge role-rider">RIDER</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+    <div class="main-content two-col-grid">
+      <div class="panel">
+        <h2>My Active Jobs</h2>
         <select id="riderSelect" onchange="loadRiderView()">
-          <option value="">-- Select Your Rider Identity --</option>
+          <option value="">-- Select Your Identity --</option>
           <option value="r1">John Rider (r1)</option>
           <option value="r2">Jane Rider (r2)</option>
           <option value="r3">Peter Otieno (r3)</option>
           <option value="r4">Faith Nyambura (r4)</option>
           <option value="r5">David Kimani (r5)</option>
         </select>
-        <div class="role-actions rider hidden" id="riderActionMsg">✅ You can accept and update deliveries</div>
-        
-        <div id="openRequestsSection">
-          <div class="section-title">📢 Open Requests (Unassigned)</div>
-          <div id="riderOpenRequests"></div>
-        </div>
-        
-        <div id="activeJobsSection">
-          <div class="section-title">📦 My Active Jobs</div>
-          <div id="riderActiveJobs"></div>
-        </div>
+        <div class="role-actions rider">✅ You can accept and update deliveries</div>
+        <div id="riderActiveJobs"></div>
+      </div>
+      <div class="panel">
+        <h2>📢 Open Requests</h2>
+        <small>Deliveries waiting for a rider</small>
+        <div id="riderOpenRequests"></div>
       </div>
     </div>
-
-    <div class="log" id="activityLog"><strong>📋 Activity log:</strong></div>
   </div>
 
 <script>
@@ -151,7 +189,21 @@
   let currentUser = null;
   let isSignup = false;
 
-  // Toggle between Login and Signup
+  // Audio Context for generating a reliable beep sound
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playBeep() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 800; // Frequency in Hz
+    gainNode.gain.value = 0.1; // Volume
+    oscillator.start();
+    setTimeout(() => oscillator.stop(), 200); // Beep for 200ms
+  }
+
   document.getElementById('toggleAuth').addEventListener('click', () => {
     isSignup = !isSignup;
     document.getElementById('authBtn').textContent = isSignup ? 'Sign Up' : 'Login';
@@ -161,7 +213,6 @@
     document.getElementById('authMessage').textContent = '';
   });
 
-  // Handle Login/Signup
   document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value;
@@ -186,73 +237,53 @@
 
   function showMessage(msg, type) { const el = document.getElementById('authMessage'); el.textContent = msg; el.className = type + '-msg'; }
   
-  // Logout clears the token and hides the dashboard
   function logout() { 
     currentToken = null; currentUser = null; 
-    document.getElementById('dashboardSection').style.display = 'none'; 
+    document.querySelectorAll('.dashboard-container').forEach(d => d.style.display = 'none');
     document.getElementById('authSection').style.display = 'block'; 
     document.getElementById('authForm').reset(); 
   }
   
   function getAuthHeaders() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }; }
 
-  // Show Dashboard based on ACTUAL logged-in user
   function showDashboard() {
     document.getElementById('authSection').style.display = 'none';
-    document.getElementById('dashboardSection').style.display = 'block';
     
-    document.getElementById('userNameDisplay').textContent = currentUser.name;
-    const roleEl = document.getElementById('userRole'); 
-    roleEl.textContent = currentUser.role; 
-    roleEl.className = 'role-badge role-' + currentUser.role;
+    // Hide all dashboards first
+    document.querySelectorAll('.dashboard-container').forEach(d => d.style.display = 'none');
+
+    // Show the specific dashboard based on role
+    if (currentUser.role === 'retailer') {
+      document.getElementById('retailerDashboard').style.display = 'block';
+      document.getElementById('retailerName').textContent = currentUser.name;
+    } else if (currentUser.role === 'dispatcher') {
+      document.getElementById('dispatcherDashboard').style.display = 'block';
+      document.getElementById('dispatcherName').textContent = currentUser.name;
+    } else if (currentUser.role === 'rider') {
+      document.getElementById('riderDashboard').style.display = 'block';
+      document.getElementById('riderName').textContent = currentUser.name;
+    }
     
-    updateRoleDisplay(); 
     refreshAll();
-    logActivity(`${currentUser.name} logged in as ${currentUser.role}`);
   }
 
-  // Update UI based on the REAL role of the logged-in user
-  function updateRoleDisplay() {
-    const modeTitles = { retailer: '📦 Retailer Mode', dispatcher: '️ Dispatcher Mode', rider: '🏍️ Rider Mode' };
-    const modeDescs = { retailer: 'Create deliveries and wait for riders to accept', dispatcher: 'Monitor all deliveries and rider availability', rider: 'Accept open requests and manage jobs' };
-    document.getElementById('currentModeTitle').textContent = modeTitles[currentUser.role];
-    document.getElementById('currentModeDesc').textContent = modeDescs[currentUser.role];
-    
-    // Highlight the panel matching the user's role
-    document.getElementById('retailerPanel').classList.toggle('active-role', currentUser.role === 'retailer');
-    document.getElementById('dispatcherPanel').classList.toggle('active-role', currentUser.role === 'dispatcher');
-    document.getElementById('riderPanel').classList.toggle('active-role', currentUser.role === 'rider');
-    
-    // Show permission badges
-    document.getElementById('retailerActionMsg').classList.toggle('hidden', currentUser.role !== 'retailer');
-    document.getElementById('dispatcherActionMsg').classList.toggle('hidden', currentUser.role !== 'dispatcher');
-    document.getElementById('riderActionMsg').classList.toggle('hidden', currentUser.role !== 'rider');
-    
-    // Enable/Disable Retailer button
-    const logBtn = document.getElementById('logDeliveryBtn');
-    if (currentUser.role === 'retailer') { logBtn.disabled = false; logBtn.textContent = 'Log Delivery'; } 
-    else { logBtn.disabled = true; logBtn.textContent = 'Login as Retailer to create'; }
-  }
-
-  function logActivity(msg) { const log = document.getElementById("activityLog"); const time = new Date().toLocaleTimeString(); log.innerHTML += `<div>[${time}] ${msg}</div>`; log.scrollTop = log.scrollHeight; }
+  function logActivity(msg) { console.log(msg); } // Simplified for separated views
 
   async function logDelivery() {
-    if (currentUser.role !== 'retailer') { alert('Only Retailers can log deliveries'); return; }
     const body = { customerName: document.getElementById("customerName").value, customerPhone: document.getElementById("customerPhone").value, address: document.getElementById("address").value, itemDescription: document.getElementById("itemDescription").value };
     const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const delivery = await res.json();
-    logActivity(` ${currentUser.name} logged delivery #${delivery.id} (Waiting for rider...)`);
+    alert(`Delivery #${delivery.id} logged successfully! Riders have been notified.`);
     refreshAll();
   }
 
   async function acceptDelivery(id) {
     const riderId = document.getElementById("riderSelect").value;
-    if (!riderId) { alert('Please select a rider identity from the dropdown first!'); return; }
-    
+    if (!riderId) { alert('Please select your rider identity from the dropdown first!'); return; }
     const res = await fetch(`/deliveries/${id}/accept`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId }) });
     const result = await res.json();
-    if (result.error) { logActivity(`❌ Accept failed: ${result.error}`); alert(result.error); } 
-    else { logActivity(`✅ Rider ${riderId} accepted delivery #${id}`); }
+    if (result.error) alert(result.error); 
+    else alert(`Delivery #${id} accepted!`);
     refreshAll();
   }
 
@@ -260,8 +291,8 @@
     const code = prompt("Enter PICKUP code:"); if (!code) return;
     const res = await fetch(`/deliveries/${id}/pickup`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ pickupCode: code }) });
     const result = await res.json();
-    if (result.error) { logActivity(`❌ Pickup #${id} FAILED`); alert(result.error); } 
-    else { logActivity(`✅ Delivery #${id} PICKED UP`); }
+    if (result.error) alert(result.error); 
+    else alert(`Pickup confirmed!`);
     refreshAll();
   }
 
@@ -269,12 +300,26 @@
     const code = prompt("Enter DELIVERY code:"); if (!code) return;
     const res = await fetch(`/deliveries/${id}/confirm`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ confirmationCode: code }) });
     const result = await res.json();
-    if (result.error) { logActivity(` Delivery #${id} FAILED`); alert(result.error); } 
-    else { logActivity(`✅ Delivery #${id} COMPLETED`); }
+    if (result.error) alert(result.error); 
+    else alert(`Delivery completed!`);
     refreshAll();
   }
 
-  // ️ STRICT CHECK: Buttons only render if the ACTUAL logged-in user is a rider
+  // NOTIFICATION SYSTEM
+  function showNotification(title, message) {
+    const popup = document.getElementById('notificationPopup');
+    document.getElementById('notifMessage').innerHTML = `<strong>${title}</strong><br>${message}`;
+    popup.classList.add('show');
+    playBeep(); // Play sound
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => { popup.classList.remove('show'); }, 5000);
+  }
+
+  function hideNotification() {
+    document.getElementById('notificationPopup').classList.remove('show');
+  }
+
   function renderDeliveryCard(d, showActions, actionType) {
     let actions = "";
     if (showActions && currentUser.role === 'rider') {
@@ -283,8 +328,8 @@
       else if (d.status === "picked_up") actions = `<button onclick="confirmDelivery('${d.id}')">Confirm Delivery</button>`;
     }
     let codes = "";
-    if (d.status === "assigned") codes = `<br><small>Pickup Code: <span class="code-box">${d.pickupCode}</span></small>`;
-    else if (d.status === "picked_up") codes = `<br><small>Delivery Code: <span class="code-box">${d.deliveryCode}</span></small>`;
+    if (d.status === "assigned") codes = `<br><small style="margin-top:5px; display:block;">Pickup Code: <span class="code-box">${d.pickupCode}</span></small>`;
+    else if (d.status === "picked_up") codes = `<br><small style="margin-top:5px; display:block;">Delivery Code: <span class="code-box">${d.deliveryCode}</span></small>`;
     
     return `<div class="delivery-card"><strong>#${d.id} - ${d.customerName}</strong> <span class="status status-${d.status}">${d.status.replace("_", " ")}</span><br><small>${d.address} — ${d.itemDescription}</small>${codes}${actions}</div>`;
   }
@@ -293,30 +338,46 @@
     const deliveries = await (await fetch("/deliveries", { headers: getAuthHeaders() })).json();
     const riders = await (await fetch("/riders", { headers: getAuthHeaders() })).json();
 
-    document.getElementById("retailerDeliveries").innerHTML = "<h3 style='font-size:13px;color:#94a3b8;'>All deliveries</h3>" + deliveries.map(d => renderDeliveryCard(d, false)).join("");
-    document.getElementById("dispatcherDeliveries").innerHTML = deliveries.map(d => renderDeliveryCard(d, false)).join("");
-    document.getElementById("riderList").innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? "✅ Available" : "🚴 On delivery"}</div>`).join("");
+    // Update Retailer View
+    if (currentUser.role === 'retailer') {
+      document.getElementById("retailerDeliveries").innerHTML = deliveries.map(d => renderDeliveryCard(d, false)).join("") || "<small>No deliveries yet.</small>";
+    }
     
-    loadRiderView();
+    // Update Dispatcher View
+    if (currentUser.role === 'dispatcher') {
+      document.getElementById("dispatcherDeliveries").innerHTML = deliveries.map(d => renderDeliveryCard(d, false)).join("") || "<small>No deliveries yet.</small>";
+      document.getElementById("riderList").innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? "✅ Available" : "🚴 On delivery"}</div>`).join("");
+    }
+
+    // Update Rider View
+    if (currentUser.role === 'rider') {
+      const openRequests = deliveries.filter(d => d.status === 'unassigned');
+      document.getElementById("riderOpenRequests").innerHTML = openRequests.length 
+        ? openRequests.map(d => renderDeliveryCard(d, true, 'accept')).join("") 
+        : "<small>No open requests right now.</small>";
+
+      const riderId = document.getElementById("riderSelect").value;
+      if (riderId) {
+        const myJobs = deliveries.filter(d => d.assignedRiderId === riderId && d.status !== 'delivered');
+        document.getElementById("riderActiveJobs").innerHTML = myJobs.length 
+          ? myJobs.map(d => renderDeliveryCard(d, true, 'action')).join("") 
+          : "<small>No active jobs for this rider.</small>";
+      } else {
+        document.getElementById("riderActiveJobs").innerHTML = "<small>Select your identity above to see jobs.</small>";
+      }
+    }
   }
 
-  async function loadRiderView() {
-    const riderId = document.getElementById("riderSelect").value;
-    const deliveries = await (await fetch("/deliveries", { headers: getAuthHeaders() })).json();
+  // SOCKET.IO LISTENER FOR REAL-TIME NOTIFICATIONS
+  socket.on("delivery_update", (data) => {
+    refreshAll(); // Always refresh lists
     
-    const openRequests = deliveries.filter(d => d.status === 'unassigned');
-    document.getElementById("riderOpenRequests").innerHTML = openRequests.length 
-      ? openRequests.map(d => renderDeliveryCard(d, true, 'accept')).join("") 
-      : "<small>No open requests right now.</small>";
-
-    if (!riderId) { document.getElementById("riderActiveJobs").innerHTML = "<small>Select a rider to view jobs</small>"; return; }
-    const myJobs = deliveries.filter(d => d.assignedRiderId === riderId && d.status !== 'delivered');
-    document.getElementById("riderActiveJobs").innerHTML = myJobs.length 
-      ? myJobs.map(d => renderDeliveryCard(d, true, 'action')).join("") 
-      : "<small>No active jobs for this rider.</small>";
-  }
-
-  socket.on("delivery_update", (data) => { refreshAll(); });
+    // If a new delivery is created, and we are a Rider or Dispatcher, notify them!
+    if (data.type === 'created' && currentUser && (currentUser.role === 'rider' || currentUser.role === 'dispatcher')) {
+      const d = data.delivery;
+      showNotification(`New Order: ${d.customerName}`, `${d.itemDescription} to ${d.address}`);
+    }
+  });
 </script>
 </body>
 </html>
