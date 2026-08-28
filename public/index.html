@@ -15,6 +15,7 @@
   .form-group { margin-bottom: 16px; }
   .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px; }
   input, button, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; font-size: 14px; }
+  input::placeholder { color: #64748b; font-style: italic; }
   button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; }
   button:hover { background: #0ea5e9; }
   .btn-accept { background: #10b981; }
@@ -35,9 +36,7 @@
   .logout-btn { background: #dc2626; color: white; width: auto; padding: 8px 16px; margin: 0; }
 
   .main-content { display: grid; gap: 20px; }
-  /* Retailer: 2 columns (Form | List) */
   .retailer-grid { grid-template-columns: 1fr 1.5fr; }
-  /* Dispatcher & Rider: 2 columns (Main | Side) */
   .two-col-grid { grid-template-columns: 2fr 1fr; }
   
   .panel { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
@@ -74,9 +73,7 @@
 <body>
 
   <!-- AUDIO FOR NOTIFICATION -->
-  <!-- A short, pleasant "ding" sound encoded in base64 so it works offline/anywhere -->
-  <audio id="notifSound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio> 
-  <!-- Note: The above is a placeholder. We will generate a real beep in JS to be safe. -->
+  <audio id="notifSound"></audio>
 
   <!-- NOTIFICATION POPUP -->
   <div id="notificationPopup" class="notification-popup">
@@ -95,7 +92,7 @@
     <form id="authForm">
       <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe"></div>
       <div class="form-group"><label>Email</label><input type="email" id="email" placeholder="you@example.com" required></div>
-      <div class="form-group"><label>Password</label><input type="password" id="password" placeholder="••••••••" required></div>
+      <div class="form-group"><label>Password</label><input type="password" id="password" placeholder="Enter password" required></div>
       <div class="form-group" id="roleGroup" style="display:none;"><label>Role</label><select id="role"><option value="retailer">Retailer Staff</option><option value="dispatcher">Dispatcher</option><option value="rider">Rider</option></select></div>
       <button type="submit" id="authBtn">Login</button>
     </form>
@@ -105,7 +102,7 @@
   <!-- ================= RETAILER DASHBOARD ================= -->
   <div id="retailerDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1> Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
+      <div><h1>📦 Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
       <div class="header-controls">
         <span id="retailerName" style="font-weight:bold;"></span>
         <span class="role-badge role-retailer">RETAILER</span>
@@ -115,10 +112,10 @@
     <div class="main-content retailer-grid">
       <div class="panel">
         <h2>Create New Delivery</h2>
-        <input id="customerName" placeholder="Customer name" value="Grace Wambui">
-        <input id="customerPhone" placeholder="Phone" value="0712345678">
-        <input id="address" placeholder="Address" value="Moi Avenue, Nairobi">
-        <input id="itemDescription" placeholder="Item" value="Phone charger">
+        <input id="customerName" placeholder="Grace Wambui">
+        <input id="customerPhone" placeholder="0712345678">
+        <input id="address" placeholder="Moi Avenue, Nairobi">
+        <input id="itemDescription" placeholder="Phone charger">
         <button onclick="logDelivery()">Log Delivery</button>
         <div class="role-actions retailer">✅ You have full access to create deliveries</div>
       </div>
@@ -132,7 +129,7 @@
   <!-- ================= DISPATCHER DASHBOARD ================= -->
   <div id="dispatcherDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>️ Dispatcher Dashboard</h1><small style="color:#94a3b8;">Monitor operations and rider status</small></div>
+      <div><h1>🗺️ Dispatcher Dashboard</h1><small style="color:#94a3b8;">Monitor operations and rider status</small></div>
       <div class="header-controls">
         <span id="dispatcherName" style="font-weight:bold;"></span>
         <span class="role-badge role-dispatcher">DISPATCHER</span>
@@ -154,7 +151,7 @@
   <!-- ================= RIDER DASHBOARD ================= -->
   <div id="riderDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>🏍️ Rider Dashboard</h1><small style="color:#94a3b8;">Accept jobs and manage deliveries</small></div>
+      <div><h1>️ Rider Dashboard</h1><small style="color:#94a3b8;">Accept jobs and manage deliveries</small></div>
       <div class="header-controls">
         <span id="riderName" style="font-weight:bold;"></span>
         <span class="role-badge role-rider">RIDER</span>
@@ -176,7 +173,7 @@
         <div id="riderActiveJobs"></div>
       </div>
       <div class="panel">
-        <h2>📢 Open Requests</h2>
+        <h2> Open Requests</h2>
         <small>Deliveries waiting for a rider</small>
         <div id="riderOpenRequests"></div>
       </div>
@@ -198,10 +195,10 @@
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     oscillator.type = 'sine';
-    oscillator.frequency.value = 800; // Frequency in Hz
-    gainNode.gain.value = 0.1; // Volume
+    oscillator.frequency.value = 800;
+    gainNode.gain.value = 0.1;
     oscillator.start();
-    setTimeout(() => oscillator.stop(), 200); // Beep for 200ms
+    setTimeout(() => oscillator.stop(), 200);
   }
 
   document.getElementById('toggleAuth').addEventListener('click', () => {
@@ -224,8 +221,15 @@
         const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        showMessage('Signup successful! Please login.', 'success');
-        isSignup = false; document.getElementById('toggleAuth').click();
+        
+        // ✅ Show success and auto-redirect to login
+        showMessage('✅ Signup successful! Redirecting to login...', 'success');
+        setTimeout(() => {
+          isSignup = false;
+          document.getElementById('toggleAuth').click();
+          document.getElementById('authBtn').focus();
+        }, 1500);
+        
       } else {
         const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const data = await res.json();
@@ -248,11 +252,8 @@
 
   function showDashboard() {
     document.getElementById('authSection').style.display = 'none';
-    
-    // Hide all dashboards first
     document.querySelectorAll('.dashboard-container').forEach(d => d.style.display = 'none');
 
-    // Show the specific dashboard based on role
     if (currentUser.role === 'retailer') {
       document.getElementById('retailerDashboard').style.display = 'block';
       document.getElementById('retailerName').textContent = currentUser.name;
@@ -266,8 +267,6 @@
     
     refreshAll();
   }
-
-  function logActivity(msg) { console.log(msg); } // Simplified for separated views
 
   async function logDelivery() {
     const body = { customerName: document.getElementById("customerName").value, customerPhone: document.getElementById("customerPhone").value, address: document.getElementById("address").value, itemDescription: document.getElementById("itemDescription").value };
@@ -305,14 +304,11 @@
     refreshAll();
   }
 
-  // NOTIFICATION SYSTEM
   function showNotification(title, message) {
     const popup = document.getElementById('notificationPopup');
     document.getElementById('notifMessage').innerHTML = `<strong>${title}</strong><br>${message}`;
     popup.classList.add('show');
-    playBeep(); // Play sound
-    
-    // Auto hide after 5 seconds
+    playBeep();
     setTimeout(() => { popup.classList.remove('show'); }, 5000);
   }
 
@@ -338,18 +334,15 @@
     const deliveries = await (await fetch("/deliveries", { headers: getAuthHeaders() })).json();
     const riders = await (await fetch("/riders", { headers: getAuthHeaders() })).json();
 
-    // Update Retailer View
     if (currentUser.role === 'retailer') {
       document.getElementById("retailerDeliveries").innerHTML = deliveries.map(d => renderDeliveryCard(d, false)).join("") || "<small>No deliveries yet.</small>";
     }
     
-    // Update Dispatcher View
     if (currentUser.role === 'dispatcher') {
       document.getElementById("dispatcherDeliveries").innerHTML = deliveries.map(d => renderDeliveryCard(d, false)).join("") || "<small>No deliveries yet.</small>";
       document.getElementById("riderList").innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? "✅ Available" : "🚴 On delivery"}</div>`).join("");
     }
 
-    // Update Rider View
     if (currentUser.role === 'rider') {
       const openRequests = deliveries.filter(d => d.status === 'unassigned');
       document.getElementById("riderOpenRequests").innerHTML = openRequests.length 
@@ -368,11 +361,8 @@
     }
   }
 
-  // SOCKET.IO LISTENER FOR REAL-TIME NOTIFICATIONS
   socket.on("delivery_update", (data) => {
-    refreshAll(); // Always refresh lists
-    
-    // If a new delivery is created, and we are a Rider or Dispatcher, notify them!
+    refreshAll();
     if (data.type === 'created' && currentUser && (currentUser.role === 'rider' || currentUser.role === 'dispatcher')) {
       const d = data.delivery;
       showNotification(`New Order: ${d.customerName}`, `${d.itemDescription} to ${d.address}`);
