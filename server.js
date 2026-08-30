@@ -37,6 +37,9 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// ==========================================
+// AUTH ROUTES
+// ==========================================
 app.post('/auth/signup', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -60,14 +63,19 @@ app.post('/auth/login', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
 
+// ==========================================
+// DATA ROUTES
+// ==========================================
 app.get('/riders', authenticateToken, (req, res) => res.json(riders));
 app.get('/deliveries', authenticateToken, (req, res) => res.json(deliveries));
 
+// Create Delivery
 app.post('/deliveries', authenticateToken, (req, res) => {
   try {
     const { customerName, customerPhone, address, itemDescription, itemPrice, deliveryFee } = req.body;
     const formattedId = `REF-2026-${String(deliveryIdCounter).padStart(3, '0')}`;
     const totalAmount = (Number(itemPrice) || 0) + (Number(deliveryFee) || 0);
+    
     const newDelivery = {
       id: formattedId,
       internalId: deliveryIdCounter++,
@@ -78,17 +86,19 @@ app.post('/deliveries', authenticateToken, (req, res) => {
       status: 'unassigned', 
       assignedRiderId: null,
       pendingRiderId: null,
-      declineHistory: [],
+      declineHistory: [], // Tracks who declined and why
       pickupCode: Math.floor(1000 + Math.random() * 9000).toString(),
       deliveryCode: Math.floor(1000 + Math.random() * 9000).toString(),
       createdAt: new Date().toISOString()
     };
+    
     deliveries.push(newDelivery);
     io.emit('delivery_update', { type: 'created', delivery: newDelivery });
     res.status(201).json(newDelivery);
   } catch (error) { res.status(500).json({ error: 'Failed to create delivery' }); }
 });
 
+// Edit Delivery (Retailer only, if unassigned)
 app.put('/deliveries/:id', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -110,6 +120,7 @@ app.put('/deliveries/:id', authenticateToken, (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to update delivery' }); }
 });
 
+// Delete Delivery (Retailer only, if unassigned)
 app.delete('/deliveries/:id', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -124,7 +135,11 @@ app.delete('/deliveries/:id', authenticateToken, (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to delete delivery' }); }
 });
 
-// ✅ NEW: Dispatcher assigns delivery to specific rider
+// ==========================================
+// DISPATCHER & RIDER WORKFLOW ROUTES
+// ==========================================
+
+// 1. Dispatcher assigns to a specific rider
 app.post('/deliveries/:id/assign', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -146,7 +161,7 @@ app.post('/deliveries/:id/assign', authenticateToken, (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to assign delivery' }); }
 });
 
-// ✅ NEW: Rider accepts delivery
+// 2. Rider accepts the delivery
 app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -161,6 +176,7 @@ app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
     
     delivery.status = 'assigned';
     delivery.assignedRiderId = riderId;
+    delivery.pendingRiderId = null;
     delivery.acceptedAt = new Date().toISOString();
     rider.available = false;
     
@@ -169,7 +185,7 @@ app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to accept delivery' }); }
 });
 
-// ✅ NEW: Rider declines delivery with reason
+// 3. Rider declines the delivery with a reason
 app.post('/deliveries/:id/decline', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -182,7 +198,7 @@ app.post('/deliveries/:id/decline', authenticateToken, (req, res) => {
     if (delivery.pendingRiderId !== riderId) return res.status(400).json({ error: 'This delivery was not offered to you' });
     if (!reason || reason.trim().length < 5) return res.status(400).json({ error: 'Please provide a reason (min 5 characters)' });
     
-    // Log the decline
+    // Log the decline history for the dispatcher to see
     delivery.declineHistory.push({
       riderId,
       riderName: rider ? rider.name : 'Unknown',
@@ -190,7 +206,7 @@ app.post('/deliveries/:id/decline', authenticateToken, (req, res) => {
       declinedAt: new Date().toISOString()
     });
     
-    // Reset to unassigned
+    // Reset to unassigned so another rider can be chosen
     delivery.status = 'unassigned';
     delivery.pendingRiderId = null;
     delivery.pendingAssignedAt = null;
@@ -200,6 +216,7 @@ app.post('/deliveries/:id/decline', authenticateToken, (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to decline delivery' }); }
 });
 
+// 4. Rider confirms pickup
 app.post('/deliveries/:id/pickup', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { pickupCode } = req.body;
@@ -211,6 +228,7 @@ app.post('/deliveries/:id/pickup', authenticateToken, (req, res) => {
   res.json({ message: 'Pickup confirmed', delivery });
 });
 
+// 5. Rider confirms delivery
 app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { confirmationCode } = req.body;
@@ -230,6 +248,9 @@ app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
   res.json({ message: 'Completed', delivery });
 });
 
+// ==========================================
+// SOCKET.IO & SERVER START
+// ==========================================
 setInterval(() => { io.emit('rider_status_update', riders); }, 5000);
 
 io.on('connection', (socket) => {
