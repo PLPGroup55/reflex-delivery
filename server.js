@@ -65,13 +65,16 @@ app.get('/deliveries', authenticateToken, (req, res) => res.json(deliveries));
 
 app.post('/deliveries', authenticateToken, (req, res) => {
   try {
-    const { customerName, customerPhone, address, itemDescription, deliveryFee } = req.body;
+    const { customerName, customerPhone, address, itemDescription, itemPrice, deliveryFee } = req.body;
     const formattedId = `REF-2026-${String(deliveryIdCounter).padStart(3, '0')}`;
+    const totalAmount = (Number(itemPrice) || 0) + (Number(deliveryFee) || 0);
     const newDelivery = {
       id: formattedId,
       internalId: deliveryIdCounter++,
       customerName, customerPhone, address, itemDescription,
+      itemPrice: itemPrice || '0',
       deliveryFee: deliveryFee || '0',
+      totalAmount: totalAmount.toString(),
       status: 'unassigned', 
       assignedRiderId: null,
       pickupCode: Math.floor(1000 + Math.random() * 9000).toString(),

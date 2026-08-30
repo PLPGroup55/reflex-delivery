@@ -27,7 +27,8 @@
   .btn-accept { background: #10b981; }
   .toggle-auth { text-align: center; margin-top: 16px; color: #38bdf8; cursor: pointer; font-size: 14px; }
   .password-wrapper { position: relative; }
-  .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 8px; font-size: 18px; width: auto; margin: 0; }
+  .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 8px; font-size: 20px; width: auto; margin: 0; }
+  .password-toggle:hover { color: #38bdf8; }
   .dashboard-container { display: none; padding: 16px; max-width: 1200px; margin: 0 auto; }
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 14px; background: #1e293b; border-radius: 12px; border: 1px solid #334155; flex-wrap: wrap; gap: 12px; }
   .header h1 { color: #38bdf8; margin: 0; font-size: 20px; }
@@ -107,7 +108,7 @@
 
 <div id="notificationPopup" class="notification-popup">
   <div class="notif-header">
-    <span>🔔 New Delivery!</span>
+    <span> New Delivery!</span>
     <button class="notif-close" onclick="hideNotification()">×</button>
   </div>
   <div id="notifMessage" style="font-size:13px; color:#e2e8f0; margin-top:8px;"></div>
@@ -123,7 +124,7 @@
 </div>
 
 <div id="authSection" class="auth-container" style="display:none;">
-  <h1> Reflex</h1>
+  <h1>🚀 Reflex</h1>
   <p class="subtitle">Delivery Tracking System</p>
   <form id="authForm">
     <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe" required></div>
@@ -132,7 +133,7 @@
       <label>Password</label>
       <div class="password-wrapper">
         <input type="password" id="password" placeholder="Enter password" required>
-        <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
+        <button type="button" class="password-toggle" onclick="togglePassword()">️</button>
       </div>
     </div>
     <div class="form-group" id="roleGroup" style="display:none;"><label>Role</label><select id="role"><option value="retailer">Retailer</option><option value="dispatcher">Dispatcher</option><option value="rider">Rider</option></select></div>
@@ -161,6 +162,7 @@
       <input id="customerPhone" placeholder="Phone Number" required>
       <input id="address" placeholder="Delivery Address" required>
       <input id="itemDescription" placeholder="Item Description" required>
+      <input id="itemPrice" placeholder="Item Price (KES)" type="number" required>
       <input id="deliveryFee" placeholder="Delivery Fee (KES)" type="number" required>
       <button onclick="logDelivery()">Log Delivery</button>
       <div class="role-actions retailer">✅ You have full access</div>
@@ -189,7 +191,7 @@
   <div class="main-content two-col-grid">
     <div class="panel">
       <h2>All Deliveries</h2>
-      <div class="search-bar"><span class="search-icon"></span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
       <div id="dispatcherDeliveries"></div>
     </div>
     <div class="panel">
@@ -227,7 +229,7 @@
       <div id="riderActiveJobs"></div>
     </div>
     <div class="panel">
-      <h2>📢 Open Requests</h2>
+      <h2> Open Requests</h2>
       <div id="riderOpenRequests"></div>
     </div>
   </div>
@@ -258,7 +260,14 @@ window.addEventListener('load', () => {
 
 function togglePassword() {
   const p = document.getElementById('password');
-  p.type = p.type === 'password' ? 'text' : 'password';
+  const btn = document.querySelector('.password-toggle');
+  if (p.type === 'password') { 
+    p.type = 'text'; 
+    btn.textContent = ''; // Eye with slash
+  } else { 
+    p.type = 'password'; 
+    btn.textContent = '👁️'; // Normal eye
+  }
 }
 
 document.getElementById('toggleAuth').addEventListener('click', () => {
@@ -321,7 +330,7 @@ function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: '️' };
+  const icons = { success: '✅', error: '❌', warning: '️', info: 'ℹ️' };
   toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
@@ -366,10 +375,15 @@ async function logDelivery() {
   const phone = document.getElementById("customerPhone").value.trim();
   const address = document.getElementById("address").value.trim();
   const item = document.getElementById("itemDescription").value.trim();
+  const itemPrice = document.getElementById("itemPrice").value.trim();
   const fee = document.getElementById("deliveryFee").value.trim();
-  if (!name || !phone || !address || !item || !fee) { showToast('Fill all fields', 'warning'); return; }
+  if (!name || !phone || !address || !item || !itemPrice || !fee) { showToast('Fill all fields', 'warning'); return; }
   try {
-    const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, deliveryFee: fee }) });
+    const res = await fetch("/deliveries", { 
+      method: "POST", 
+      headers: getAuthHeaders(), 
+      body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee }) 
+    });
     if (!res.ok) {
       const err = await res.json();
       if (res.status === 403 || res.status === 401) { showToast('Session expired. Please login again.', 'error'); setTimeout(logout, 1500); return; }
@@ -380,6 +394,7 @@ async function logDelivery() {
     document.getElementById("customerPhone").value = "";
     document.getElementById("address").value = "";
     document.getElementById("itemDescription").value = "";
+    document.getElementById("itemPrice").value = "";
     document.getElementById("deliveryFee").value = "";
     showToast(`Delivery ${delivery.id} logged!`, 'success');
     refreshAll();
@@ -436,8 +451,10 @@ function showReceipt(d) {
     <div class="receipt-row"><span>Phone:</span><span>${d.customerPhone}</span></div>
     <div class="receipt-row"><span>Address:</span><span>${d.address}</span></div>
     <div class="receipt-row"><span>Item:</span><span>${d.itemDescription}</span></div>
+    <div class="receipt-row"><span>Item Price:</span><span>KES ${Number(d.itemPrice).toLocaleString()}</span></div>
+    <div class="receipt-row"><span>Delivery Fee:</span><span>KES ${Number(d.deliveryFee).toLocaleString()}</span></div>
     <div class="receipt-row"><span>Rider:</span><span>${riderName}</span></div>
-    <div class="receipt-total receipt-row"><span>TOTAL:</span><span>KES ${d.deliveryFee}</span></div>
+    <div class="receipt-total receipt-row"><span>TOTAL:</span><span>KES ${Number(d.totalAmount).toLocaleString()}</span></div>
   `;
   document.getElementById('receiptOverlay').classList.add('show');
 }
@@ -476,7 +493,7 @@ function renderDeliveries(elementId, list, showActions, actionType = null) {
         <strong>${d.id} - ${d.customerName}</strong><span class="status status-${d.status}">${d.status.replace("_"," ")}</span>
       </div>
       <small style="display:block; margin-top:4px;">${d.address} — ${d.itemDescription}</small>
-      <div class="delivery-meta"><span>Fee: KES ${d.deliveryFee}</span><span> ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
+      <div class="delivery-meta"><span>Total: KES ${Number(d.totalAmount).toLocaleString()}</span><span>🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
       ${codes}${getTimeline(d.status)}${actions}
     </div>`;
   }).join("");
@@ -495,8 +512,8 @@ async function refreshAll() {
     const total = allDeliveries.length;
     const pending = allDeliveries.filter(d => d.status !== 'delivered').length;
     const completed = allDeliveries.filter(d => d.status === 'delivered').length;
-    const revenue = allDeliveries.filter(d => d.status === 'delivered').reduce((s, d) => s + Number(d.deliveryFee||0), 0);
-    const statsHTML = `<div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div><div class="stat-card"><div class="stat-value">${completed}</div><div class="stat-label">Done</div></div><div class="stat-card"><div class="stat-value" style="color:#10b981;">${revenue}</div><div class="stat-label">Revenue</div></div>`;
+    const revenue = allDeliveries.filter(d => d.status === 'delivered').reduce((s, d) => s + Number(d.totalAmount||0), 0);
+    const statsHTML = `<div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total</div></div><div class="stat-card"><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div><div class="stat-card"><div class="stat-value">${completed}</div><div class="stat-label">Done</div></div><div class="stat-card"><div class="stat-value" style="color:#10b981;">${revenue.toLocaleString()}</div><div class="stat-label">Revenue</div></div>`;
     
     if (currentUser.role === 'retailer') { document.getElementById('retailerStats').innerHTML = statsHTML; renderDeliveries('retailerDeliveries', allDeliveries, false); }
     if (currentUser.role === 'dispatcher') { document.getElementById('dispatcherStats').innerHTML = statsHTML; renderDeliveries('dispatcherDeliveries', allDeliveries, false); document.getElementById('riderList').innerHTML = riders.map(r => `<div class="delivery-card">${r.name} - ${r.available ? '✅ Available' : '🚴 Busy'}</div>`).join(''); }
@@ -508,7 +525,7 @@ async function refreshAll() {
         const myJobs = allDeliveries.filter(d => d.assignedRiderId === riderId && d.status !== 'delivered');
         renderDeliveries('riderActiveJobs', myJobs, true, 'action');
         const earnings = myJobs.filter(d => d.status === 'delivered').reduce((s, d) => s + Number(d.deliveryFee||0), 0);
-        document.getElementById('riderStats').innerHTML = `<div class="stat-card"><div class="stat-value">${myJobs.length}</div><div class="stat-label">My Jobs</div></div><div class="stat-card"><div class="stat-value" style="color:#10b981;">${earnings}</div><div class="stat-label">Earnings</div></div>`;
+        document.getElementById('riderStats').innerHTML = `<div class="stat-card"><div class="stat-value">${myJobs.length}</div><div class="stat-label">My Jobs</div></div><div class="stat-card"><div class="stat-value" style="color:#10b981;">${earnings.toLocaleString()}</div><div class="stat-label">Earnings</div></div>`;
       } else { document.getElementById('riderActiveJobs').innerHTML = '<div class="empty-state"><p>Select identity above</p></div>'; }
     }
   } catch (err) { console.error(err); showToast('Error loading data', 'error'); }
