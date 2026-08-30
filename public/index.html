@@ -49,27 +49,6 @@
   .stat-value.green { color: #10b981; }
   .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
   
-  .currency-toggle { 
-    background: #0f172a; 
-    border: 2px solid #10b981; 
-    border-radius: 8px; 
-    padding: 8px 32px 8px 12px; 
-    color: #10b981; 
-    font-weight: bold; 
-    font-size: 14px; 
-    cursor: pointer; 
-    margin: 0; 
-    width: auto; 
-    appearance: none; 
-    -webkit-appearance: none; 
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2310b981%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat; 
-    background-position: right 8px center; 
-    background-size: 16px;
-  }
-  .currency-toggle:hover { background-color: #1e293b; border-color: #34d399; }
-  .currency-toggle option { background: #1e293b; color: #e2e8f0; }
-
   .main-content { display: grid; gap: 16px; }
   .retailer-grid { grid-template-columns: 1fr; }
   .two-col-grid { grid-template-columns: 1fr; }
@@ -156,7 +135,7 @@
 </div>
 
 <div id="authSection" class="auth-container" style="display:none;">
-  <h1> Reflex</h1>
+  <h1>🚀 Reflex</h1>
   <p class="subtitle">Delivery Tracking System</p>
   <form id="authForm">
     <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe" required></div>
@@ -194,10 +173,6 @@
     <div class="header-controls">
       <span id="retailerName" style="font-weight:bold;"></span>
       <span class="role-badge role-retailer">RETAILER</span>
-      <select id="retailerCurrencyToggle" class="currency-toggle" onchange="syncCurrencyFromHeader('retailer')">
-        <option value="KES">KES (KSh)</option>
-        <option value="USD">USD ($)</option>
-      </select>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -210,17 +185,10 @@
       <input id="address" placeholder="Delivery Address" required>
       <input id="itemDescription" placeholder="Item Description" required>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-        <input id="itemPrice" placeholder="Item Price" type="number" required>
-        <input id="deliveryFee" placeholder="Delivery Fee" type="number" required>
+        <input id="itemPrice" placeholder="Item Price (KES)" type="number" required>
+        <input id="deliveryFee" placeholder="Delivery Fee (KES)" type="number" required>
       </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label>Currency</label>
-        <select id="currency" class="currency-toggle" style="border-color:#38bdf8; color:#38bdf8; background-image: url(&quot;data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2338bdf8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E&quot;);" onchange="syncCurrencyFromForm()">
-          <option value="KES">KES (KSh)</option>
-          <option value="USD">USD ($)</option>
-        </select>
-      </div>
-      <button onclick="logDelivery()">Log Delivery</button>
+      <button onclick="logDelivery()" style="margin-top:16px;">Log Delivery</button>
       <div class="role-actions retailer">✅ You have full access</div>
     </div>
     <div class="panel">
@@ -240,10 +208,6 @@
     <div class="header-controls">
       <span id="dispatcherName" style="font-weight:bold;"></span>
       <span class="role-badge role-dispatcher">DISPATCHER</span>
-      <select id="dispatcherCurrencyToggle" class="currency-toggle" onchange="syncCurrencyFromHeader('dispatcher')">
-        <option value="KES">KES (KSh)</option>
-        <option value="USD">USD ($)</option>
-      </select>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -251,7 +215,7 @@
   <div class="main-content two-col-grid">
     <div class="panel">
       <h2>All Deliveries</h2>
-      <div class="search-bar"><span class="search-icon"></span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
       <div id="dispatcherDeliveries"></div>
     </div>
     <div class="panel">
@@ -302,13 +266,6 @@
 <script>
 const socket = io();
 let currentToken = null, currentUser = null, isSignup = false, allDeliveries = [], riders = [];
-let currentCurrency = 'KES';
-let retailerViewCurrency = 'KES';
-let dispatcherViewCurrency = 'KES';
-
-const EXCHANGE_RATE = 129; 
-
-const currencySymbols = { 'USD': '$', 'KES': 'KSh' };
 
 const EYE_ICON = `<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
 const EYE_OFF_ICON = `<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>`;
@@ -346,81 +303,6 @@ function togglePassword(fieldId, btn) {
   const p = document.getElementById(fieldId);
   if (p.type === 'password') { p.type = 'text'; btn.innerHTML = EYE_OFF_ICON; } 
   else { p.type = 'password'; btn.innerHTML = EYE_ICON; }
-}
-
-// ✅ SYNC: When header currency changes, update form currency too
-function syncCurrencyFromHeader(role) {
-  const headerSelect = document.getElementById(role + 'CurrencyToggle');
-  const formSelect = document.getElementById('currency');
-  const newCurrency = headerSelect.value;
-  
-  if (role === 'retailer') {
-    retailerViewCurrency = newCurrency;
-    currentCurrency = newCurrency;
-  } else {
-    dispatcherViewCurrency = newCurrency;
-  }
-  
-  // Update form to match header
-  if (formSelect) {
-    formSelect.value = newCurrency;
-  }
-  
-  updateCurrencyDisplay();
-  refreshAll();
-}
-
-// ✅ SYNC: When form currency changes, update header currency too
-function syncCurrencyFromForm() {
-  const formSelect = document.getElementById('currency');
-  const newCurrency = formSelect.value;
-  currentCurrency = newCurrency;
-  
-  // Update header to match form
-  if (currentUser.role === 'retailer') {
-    const headerSelect = document.getElementById('retailerCurrencyToggle');
-    if (headerSelect) {
-      headerSelect.value = newCurrency;
-      retailerViewCurrency = newCurrency;
-    }
-  }
-  
-  updateCurrencyDisplay();
-}
-
-function updateCurrencyDisplay() {
-  const itemPriceInput = document.getElementById('itemPrice');
-  const deliveryFeeInput = document.getElementById('deliveryFee');
-  if (currentCurrency === 'USD') {
-    itemPriceInput.placeholder = 'Item Price (e.g. 150)';
-    deliveryFeeInput.placeholder = 'Delivery Fee (e.g. 10)';
-  } else {
-    itemPriceInput.placeholder = 'Item Price (e.g. 15000)';
-    deliveryFeeInput.placeholder = 'Delivery Fee (e.g. 500)';
-  }
-}
-
-function updateStatsCurrency(role) {
-  const select = document.getElementById(role + 'CurrencyToggle');
-  if (role === 'retailer') retailerViewCurrency = select.value;
-  else dispatcherViewCurrency = select.value;
-  refreshAll();
-}
-
-function convertCurrency(amount, fromCurrency, toCurrency) {
-  if (fromCurrency === toCurrency) return amount;
-  if (fromCurrency === 'USD' && toCurrency === 'KES') return amount * EXCHANGE_RATE;
-  if (fromCurrency === 'KES' && toCurrency === 'USD') return amount / EXCHANGE_RATE;
-  return amount;
-}
-
-const savedCurrency = localStorage.getItem('preferred_currency');
-if (savedCurrency) {
-  currentCurrency = savedCurrency;
-  if (document.getElementById('currency')) {
-    document.getElementById('currency').value = currentCurrency;
-    updateCurrencyDisplay();
-  }
 }
 
 document.getElementById('toggleAuth').addEventListener('click', () => {
@@ -480,7 +362,7 @@ function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  const icons = { success: '✅', error: '❌', warning: '️', info: 'ℹ️' };
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
   toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
@@ -495,13 +377,10 @@ function showDashboard() {
     document.getElementById('retailerDashboard').style.display = 'block';
     document.getElementById('retailerName').textContent = currentUser.name;
     document.getElementById('retailerAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
-    if (document.getElementById('currency') && currentCurrency) document.getElementById('currency').value = currentCurrency;
-    if (document.getElementById('retailerCurrencyToggle')) document.getElementById('retailerCurrencyToggle').value = retailerViewCurrency;
   } else if (currentUser.role === 'dispatcher') {
     document.getElementById('dispatcherDashboard').style.display = 'block';
     document.getElementById('dispatcherName').textContent = currentUser.name;
     document.getElementById('dispatcherAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
-    if (document.getElementById('dispatcherCurrencyToggle')) document.getElementById('dispatcherCurrencyToggle').value = dispatcherViewCurrency;
   } else if (currentUser.role === 'rider') {
     document.getElementById('riderDashboard').style.display = 'block';
     document.getElementById('riderName').textContent = currentUser.name;
@@ -526,11 +405,11 @@ async function logDelivery() {
   const item = document.getElementById("itemDescription").value.trim();
   const itemPrice = document.getElementById("itemPrice").value.trim();
   const fee = document.getElementById("deliveryFee").value.trim();
-  const currency = document.getElementById('currency') ? document.getElementById('currency').value : 'KES';
   
   if (!name || !phone || !address || !item || !itemPrice || !fee) { showToast('Fill all fields', 'warning'); return; }
   try {
-    const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee, currency }) });
+    // Hardcoded to KES to prevent currency bugs
+    const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee, currency: 'KES' }) });
     if (!res.ok) {
       const err = await res.json();
       if (res.status === 403 || res.status === 401) { showToast('Session expired. Please login again.', 'error'); setTimeout(logout, 1500); return; }
@@ -584,7 +463,6 @@ function hideNotification() { document.getElementById('notificationPopup').class
 
 function showReceipt(d) {
   const riderName = d.assignedRiderId ? (riders.find(r => r.id === d.assignedRiderId)?.name || 'Unknown') : 'Unassigned';
-  const symbol = currencySymbols[d.currency] || 'KSh';
   document.getElementById('receiptContent').innerHTML = `
     <div class="receipt-row"><span>Receipt No:</span><strong>#${d.internalId}</strong></div>
     <div class="receipt-row"><span>Delivery ID:</span><strong>${d.id}</strong></div>
@@ -595,10 +473,10 @@ function showReceipt(d) {
     <div class="receipt-row"><span>Phone:</span><span>${d.customerPhone}</span></div>
     <div class="receipt-row"><span>Address:</span><span>${d.address}</span></div>
     <div class="receipt-row"><span>Item:</span><span>${d.itemDescription}</span></div>
-    <div class="receipt-row"><span>Item Price:</span><span>${symbol}${Number(d.itemPrice).toLocaleString()}</span></div>
-    <div class="receipt-row"><span>Delivery Fee:</span><span>${symbol}${Number(d.deliveryFee).toLocaleString()}</span></div>
+    <div class="receipt-row"><span>Item Price:</span><span>KSh ${Number(d.itemPrice).toLocaleString()}</span></div>
+    <div class="receipt-row"><span>Delivery Fee:</span><span>KSh ${Number(d.deliveryFee).toLocaleString()}</span></div>
     <div class="receipt-row"><span>Rider:</span><span>${riderName}</span></div>
-    <div class="receipt-total receipt-row"><span>TOTAL:</span><span>${symbol}${Number(d.totalAmount).toLocaleString()}</span></div>
+    <div class="receipt-total receipt-row"><span>TOTAL:</span><span>KSh ${Number(d.totalAmount).toLocaleString()}</span></div>
   `;
   document.getElementById('receiptOverlay').classList.add('show');
 }
@@ -629,13 +507,12 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
   else if (d.status === "picked_up") codes = `<div style="margin-top:8px;"><small>Delivery Code: <span class="code-box">${d.deliveryCode}</span></small></div>`;
   const receiptBtn = d.status === 'delivered' ? `<button class="btn-receipt" onclick='showReceipt(${JSON.stringify(d).replace(/'/g,"\\'")})'>🧾 Receipt</button>` : '';
   const cardClass = isHighlighted ? 'delivery-card active-job' : 'delivery-card';
-  const symbol = currencySymbols[d.currency] || 'KSh';
   return `<div class="${cardClass}">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <strong>${d.id} - ${d.customerName}</strong><span class="status status-${d.status}">${d.status.replace("_"," ")}</span>
     </div>
     <small style="display:block; margin-top:4px;">${d.address} — ${d.itemDescription}</small>
-    <div class="delivery-meta"><span>Total: ${symbol}${Number(d.totalAmount).toLocaleString()}</span><span> 🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
+    <div class="delivery-meta"><span>Total: KSh ${Number(d.totalAmount).toLocaleString()}</span><span>🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
     ${codes}${getTimeline(d.status)}${actions}
   </div>`;
 }
@@ -667,28 +544,21 @@ async function refreshAll() {
     const pending = allDeliveries.filter(d => d.status !== 'delivered').length;
     const completed = allDeliveries.filter(d => d.status === 'delivered').length;
     
-    let viewCurrency = 'KES';
-    if (currentUser.role === 'retailer') viewCurrency = retailerViewCurrency;
-    else if (currentUser.role === 'dispatcher') viewCurrency = dispatcherViewCurrency;
-    
+    // Pure KES calculation - no conversion logic
     let salesRevenue = 0;
     let totalDeliveryFees = 0;
     
     allDeliveries.filter(d => d.status === 'delivered').forEach(d => {
-      const itemPriceInViewCurrency = convertCurrency(Number(d.itemPrice || 0), d.currency || 'KES', viewCurrency);
-      const deliveryFeeInViewCurrency = convertCurrency(Number(d.deliveryFee || 0), d.currency || 'KES', viewCurrency);
-      salesRevenue += itemPriceInViewCurrency;
-      totalDeliveryFees += deliveryFeeInViewCurrency;
+      salesRevenue += Number(d.itemPrice || 0);
+      totalDeliveryFees += Number(d.deliveryFee || 0);
     });
-    
-    const symbol = currencySymbols[viewCurrency] || 'KSh';
     
     const statsHTML = `
       <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total</div></div>
       <div class="stat-card"><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
       <div class="stat-card"><div class="stat-value">${completed}</div><div class="stat-label">Done</div></div>
-      <div class="stat-card"><div class="stat-value green">${symbol}${Math.round(salesRevenue).toLocaleString()}</div><div class="stat-label">Sales Revenue</div></div>
-      <div class="stat-card"><div class="stat-value" style="color:#f59e0b">${symbol}${Math.round(totalDeliveryFees).toLocaleString()}</div><div class="stat-label">Delivery Fees</div></div>
+      <div class="stat-card"><div class="stat-value green">KSh ${Math.round(salesRevenue).toLocaleString()}</div><div class="stat-label">Sales Revenue</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:#f59e0b">KSh ${Math.round(totalDeliveryFees).toLocaleString()}</div><div class="stat-label">Delivery Fees</div></div>
     `;
     
     if (currentUser.role === 'retailer') { document.getElementById('retailerStats').innerHTML = statsHTML; renderDeliveries('retailerDeliveries', allDeliveries, false); }
@@ -720,7 +590,7 @@ async function refreshAll() {
         document.getElementById('riderStats').innerHTML = `
           <div class="stat-card"><div class="stat-value">${activeJob ? 1 : 0}</div><div class="stat-label">Active Job</div></div>
           <div class="stat-card"><div class="stat-value">${myCompleted}</div><div class="stat-label">Completed</div></div>
-          <div class="stat-card"><div class="stat-value green">${symbol}${myEarnings.toLocaleString()}</div><div class="stat-label">My Earnings</div></div>
+          <div class="stat-card"><div class="stat-value green">KSh ${myEarnings.toLocaleString()}</div><div class="stat-label">My Earnings</div></div>
         `;
       } else { 
         document.getElementById('currentActiveJobBox').style.display = 'none';
