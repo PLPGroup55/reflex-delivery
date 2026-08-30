@@ -19,12 +19,18 @@
   .auth-container .subtitle { text-align: center; color: #94a3b8; margin-bottom: 24px; }
   .form-group { margin-bottom: 16px; position: relative; }
   .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px; }
-  input, button, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; font-size: 16px; }
-  input:focus { outline: none; border-color: #38bdf8; }
+  input, button, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; font-size: 16px; }
+  textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+  input:focus, textarea:focus { outline: none; border-color: #38bdf8; }
   button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; font-size: 16px; padding: 14px; }
   button:hover { background: #0ea5e9; }
   button:disabled { background: #475569; cursor: not-allowed; }
   .btn-accept { background: #10b981; }
+  .btn-accept:hover { background: #059669; }
+  .btn-decline { background: #dc2626; color: white; }
+  .btn-decline:hover { background: #b91c1c; }
+  .btn-assign { background: #7c3aed; color: white; }
+  .btn-assign:hover { background: #6d28d9; }
   .btn-edit { background: #f59e0b; color: white; }
   .btn-edit:hover { background: #d97706; }
   .btn-delete { background: #dc2626; color: white; }
@@ -51,6 +57,7 @@
   .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; text-align: center; }
   .stat-value { font-size: 24px; font-weight: bold; color: #38bdf8; }
   .stat-value.green { color: #10b981; }
+  .stat-value.orange { color: #f59e0b; }
   .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
   
   .main-content { display: grid; gap: 16px; }
@@ -60,12 +67,15 @@
   .panel h2 { margin-top: 0; font-size: 18px; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
   .role-actions { margin-top: 12px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px; text-align: center; }
   .role-actions.retailer { background: #2e1065; border: 1px solid #7c3aed; }
+  .role-actions.dispatcher { background: #064e3b; border: 1px solid #059669; }
   .role-actions.rider { background: #7c2d12; border: 1px solid #ea580c; }
   .delivery-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
   .delivery-card.active-job { background: #1e3a5f; border: 2px solid #38bdf8; padding: 15px; margin-bottom: 15px; }
+  .delivery-card.pending { background: #1e293b; border: 2px solid #f59e0b; }
   .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-left: 8px; }
   .status-unassigned { background: #7f1d1d; color: #fecaca; }
-  .status-assigned { background: #78350f; color: #fed7aa; }
+  .status-pending_acceptance { background: #78350f; color: #fed7aa; }
+  .status-assigned { background: #1e3a5f; color: #93c5fd; }
   .status-picked_up { background: #1e3a5f; color: #93c5fd; }
   .status-delivered { background: #14532d; color: #86efac; }
   .code-box { background: #1e3a5f; border: 2px dashed #38bdf8; padding: 4px 8px; border-radius: 6px; font-weight: bold; color: #38bdf8; font-family: monospace; }
@@ -87,7 +97,6 @@
   .notif-header { font-weight: bold; color: #38bdf8; display: flex; justify-content: space-between; }
   .notif-close { cursor: pointer; color: #94a3b8; background: none; border: none; font-size: 18px; width: auto; padding: 0; margin: 0; }
   
-  /* Modal Styles */
   .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 10000; padding: 20px; }
   .modal-overlay.show { display: flex; }
   .modal-content { background: #1e293b; border: 2px solid #38bdf8; border-radius: 16px; padding: 24px; max-width: 500px; width: 100%; position: relative; }
@@ -109,6 +118,8 @@
   .timeline-step.active { color: #38bdf8; font-weight: bold; }
   .timeline-step::before { content: ''; display: block; width: 8px; height: 8px; background: #475569; border-radius: 50%; margin: 0 auto 4px; }
   .timeline-step.active::before { background: #38bdf8; }
+  .decline-history { margin-top: 8px; padding: 8px; background: #1e293b; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 11px; }
+  .decline-history strong { color: #f59e0b; }
   @media (min-width: 768px) {
     .retailer-grid { grid-template-columns: 1fr 1.5fr; }
     .two-col-grid { grid-template-columns: 2fr 1fr; }
@@ -138,7 +149,7 @@
   <div id="notifMessage" style="font-size:13px; color:#e2e8f0; margin-top:8px;"></div>
 </div>
 
-<!-- ✅ NEW: Edit Modal -->
+<!-- Edit Modal -->
 <div id="editModalOverlay" class="modal-overlay">
   <div class="modal-content">
     <button class="modal-close" onclick="closeEditModal()">×</button>
@@ -155,6 +166,24 @@
     <div class="modal-actions">
       <button class="btn-delete" onclick="closeEditModal()">Cancel</button>
       <button onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Decline Modal -->
+<div id="declineModalOverlay" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeDeclineModal()">×</button>
+    <h2>❌ Decline Delivery</h2>
+    <p style="color:#94a3b8; margin-bottom:16px;">Please provide a reason for declining this delivery:</p>
+    <input type="hidden" id="declineDeliveryId">
+    <div class="form-group">
+      <label>Reason for Declining</label>
+      <textarea id="declineReason" placeholder="e.g., Too far from my location, Vehicle issue, etc." required></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-accept" onclick="closeDeclineModal()">Cancel</button>
+      <button class="btn-decline" onclick="submitDecline()">Confirm Decline</button>
     </div>
   </div>
 </div>
@@ -227,7 +256,7 @@
     </div>
     <div class="panel">
       <h2>All Deliveries</h2>
-      <div class="search-bar"><span class="search-icon"></span><input type="text" id="retailerSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="retailerSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
       <div id="retailerDeliveries"></div>
     </div>
   </div>
@@ -274,7 +303,7 @@
   <div class="stats-grid" id="riderStats"></div>
   <div class="main-content two-col-grid">
     <div class="panel">
-      <h2>My Jobs</h2>
+      <h2>My Active Jobs</h2>
       <div id="currentActiveJobBox" style="display:none; margin-bottom: 20px;">
         <h3 style="color:#38bdf8; margin-bottom:10px;">🚴 CURRENT DELIVERY</h3>
         <div id="currentActiveJobContent"></div>
@@ -287,12 +316,13 @@
         <option value="r4">Faith Nyambura (r4)</option>
         <option value="r5">David Kimani (r5)</option>
       </select>
-      <div class="role-actions rider">✅ You can accept deliveries</div>
+      <div class="role-actions rider">✅ You can accept or decline deliveries</div>
       <div id="riderActiveJobs"></div>
     </div>
     <div class="panel">
-      <h2>📢 Open Requests</h2>
-      <div id="riderOpenRequests"></div>
+      <h2>📥 Pending Assignments</h2>
+      <small style="color:#94a3b8; display:block; margin-bottom:12px;">Deliveries offered to you by the dispatcher</small>
+      <div id="riderPendingAssignments"></div>
     </div>
   </div>
 </div>
@@ -396,7 +426,7 @@ function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  const icons = { success: '✅', error: '❌', warning: '️', info: 'ℹ️' };
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
   toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
@@ -455,7 +485,6 @@ async function logDelivery() {
   } catch (err) { showToast(err.message, 'error'); }
 }
 
-// ✅ NEW: Edit Functions
 function openEditModal(id) {
   const d = allDeliveries.find(x => x.id === id);
   if (!d) return;
@@ -501,7 +530,6 @@ async function saveEdit() {
   } catch (err) { showToast(err.message, 'error'); }
 }
 
-// ✅ NEW: Delete Function
 async function deleteDelivery(id) {
   if (!confirm('Are you sure you want to delete this delivery? This cannot be undone.')) return;
   try {
@@ -513,14 +541,62 @@ async function deleteDelivery(id) {
   } catch (err) { showToast(err.message, 'error'); }
 }
 
+// ✅ NEW: Dispatcher assigns to specific rider
+async function assignToRider(deliveryId) {
+  const riderSelect = document.getElementById(`assignRider_${deliveryId}`);
+  if (!riderSelect) return;
+  const riderId = riderSelect.value;
+  if (!riderId) { showToast('Please select a rider first', 'warning'); return; }
+  
+  try {
+    const res = await fetch(`/deliveries/${deliveryId}/assign`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId }) });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to assign');
+    showToast(result.message, 'success');
+    refreshAll();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+// ✅ NEW: Rider accepts delivery
 async function acceptDelivery(id) {
   const riderId = document.getElementById("riderSelect").value;
-  if (!riderId) { showToast('Select rider identity', 'warning'); return; }
+  if (!riderId) { showToast('Select your identity first', 'warning'); return; }
   localStorage.setItem('my_rider_id', riderId);
   try {
     const res = await fetch(`/deliveries/${id}/accept`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId }) });
     const result = await res.json();
-    if (result.error) showToast(result.error, 'error'); else showToast(`Accepted ${id}`, 'success');
+    if (!res.ok) throw new Error(result.error || 'Failed to accept');
+    showToast('Delivery accepted!', 'success');
+    refreshAll();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+// ✅ NEW: Rider opens decline modal
+function openDeclineModal(id) {
+  const riderId = document.getElementById("riderSelect").value;
+  if (!riderId) { showToast('Select your identity first', 'warning'); return; }
+  document.getElementById('declineDeliveryId').value = id;
+  document.getElementById('declineReason').value = '';
+  document.getElementById('declineModalOverlay').classList.add('show');
+}
+
+function closeDeclineModal() {
+  document.getElementById('declineModalOverlay').classList.remove('show');
+}
+
+async function submitDecline() {
+  const id = document.getElementById('declineDeliveryId').value;
+  const riderId = document.getElementById("riderSelect").value;
+  const reason = document.getElementById('declineReason').value.trim();
+  
+  if (!reason || reason.length < 5) { showToast('Please provide a reason (min 5 characters)', 'warning'); return; }
+  
+  try {
+    const res = await fetch(`/deliveries/${id}/decline`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId, reason }) });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Failed to decline');
+    showToast('Delivery declined', 'success');
+    closeDeclineModal();
     refreshAll();
   } catch (err) { showToast(err.message, 'error'); }
 }
@@ -558,7 +634,7 @@ function showReceipt(d) {
     <div class="receipt-row"><span>Receipt No:</span><strong>#${d.internalId}</strong></div>
     <div class="receipt-row"><span>Delivery ID:</span><strong>${d.id}</strong></div>
     <div class="receipt-row"><span>Date:</span><span>${new Date(d.createdAt).toLocaleString()}</span></div>
-    <div class="receipt-row"><span>Status:</span><strong>${d.status.toUpperCase()}</strong></div>
+    <div class="receipt-row"><span>Status:</span><strong>${d.status.toUpperCase().replace('_',' ')}</strong></div>
     <hr style="border-color:#334155; border-style:dashed;">
     <div class="receipt-row"><span>Customer:</span><span>${d.customerName}</span></div>
     <div class="receipt-row"><span>Phone:</span><span>${d.customerPhone}</span></div>
@@ -574,9 +650,10 @@ function showReceipt(d) {
 function hideReceipt() { document.getElementById('receiptOverlay').classList.remove('show'); }
 
 function getTimeline(status) {
-  const steps = ['unassigned', 'assigned', 'picked_up', 'delivered'];
+  const steps = ['unassigned', 'pending_acceptance', 'assigned', 'picked_up', 'delivered'];
+  const labels = ['Created', 'Offered', 'Accepted', 'Picked Up', 'Delivered'];
   const idx = steps.indexOf(status);
-  return `<div class="timeline">${['Created','Assigned','Picked Up','Delivered'].map((l,i) => `<div class="timeline-step ${i<=idx?'active':''}">${l}</div>`).join('')}</div>`;
+  return `<div class="timeline">${labels.map((l,i) => `<div class="timeline-step ${i<=idx?'active':''}">${l}</div>`).join('')}</div>`;
 }
 
 function filterDeliveries() {
@@ -588,35 +665,58 @@ function filterDeliveries() {
 
 function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = false) {
   let actions = "";
-  if (showActions && currentUser.role === 'rider') {
+  
+  // Rider actions
+  if (showActions && currentUser && currentUser.role === 'rider') {
     if (actionType === 'accept') actions = `<button class="btn-accept" onclick="acceptDelivery('${d.id}')">Accept</button>`;
+    else if (actionType === 'decline') actions = `<button class="btn-decline" onclick="openDeclineModal('${d.id}')">Decline</button>`;
     else if (d.status === "assigned") actions = `<button onclick="confirmPickup('${d.id}')">Confirm Pickup</button>`;
     else if (d.status === "picked_up") actions = `<button onclick="confirmDelivery('${d.id}')">Confirm Delivery</button>`;
   }
   
-  // ✅ NEW: Edit/Delete buttons for Retailer (only if unassigned)
+  // Dispatcher assign action
+  if (currentUser && currentUser.role === 'dispatcher' && d.status === 'unassigned') {
+    const availableRiders = riders.filter(r => r.available);
+    actions = `
+      <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+        <select id="assignRider_${d.id}" style="flex:1; padding:8px; font-size:13px;">
+          <option value="">-- Select Rider --</option>
+          ${availableRiders.map(r => `<option value="${r.id}">${r.name} (${r.id})</option>`).join('')}
+        </select>
+        <button class="btn-assign" style="margin:0; padding:8px 12px; font-size:13px;" onclick="assignToRider('${d.id}')">Assign</button>
+      </div>
+    `;
+  }
+  
+  // Retailer edit/delete
   let editDeleteBtns = "";
   if (currentUser && currentUser.role === 'retailer' && d.status === 'unassigned') {
     editDeleteBtns = `
       <div style="margin-top:8px; display:flex; gap:8px;">
         <button class="btn-receipt btn-edit" onclick="openEditModal('${d.id}')">✏️ Edit</button>
-        <button class="btn-receipt btn-delete" onclick="deleteDelivery('${d.id}')">🗑️ Delete</button>
+        <button class="btn-receipt btn-delete" onclick="deleteDelivery('${d.id}')">️ Delete</button>
       </div>
     `;
+  }
+
+  // Decline history for dispatcher
+  let declineHistoryHTML = "";
+  if (d.declineHistory && d.declineHistory.length > 0 && currentUser && currentUser.role === 'dispatcher') {
+    declineHistoryHTML = `<div class="decline-history"><strong>⚠️ Decline History:</strong><br>${d.declineHistory.map(h => `${h.riderName}: "${h.reason}"`).join('<br>')}</div>`;
   }
 
   let codes = "";
   if (d.status === "assigned") codes = `<div style="margin-top:8px;"><small>Pickup Code: <span class="code-box">${d.pickupCode}</span></small></div>`;
   else if (d.status === "picked_up") codes = `<div style="margin-top:8px;"><small>Delivery Code: <span class="code-box">${d.deliveryCode}</span></small></div>`;
-  const receiptBtn = d.status === 'delivered' ? `<button class="btn-receipt" onclick='showReceipt(${JSON.stringify(d).replace(/'/g,"\\'")})'>🧾 Receipt</button>` : '';
-  const cardClass = isHighlighted ? 'delivery-card active-job' : 'delivery-card';
+  const receiptBtn = d.status === 'delivered' ? `<button class="btn-receipt" onclick='showReceipt(${JSON.stringify(d).replace(/'/g,"\\'")})'> Receipt</button>` : '';
+  const cardClass = isHighlighted ? 'delivery-card active-job' : (d.status === 'pending_acceptance' ? 'delivery-card pending' : 'delivery-card');
   return `<div class="${cardClass}">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <strong>${d.id} - ${d.customerName}</strong><span class="status status-${d.status}">${d.status.replace("_"," ")}</span>
     </div>
     <small style="display:block; margin-top:4px;">${d.address} — ${d.itemDescription}</small>
     <div class="delivery-meta"><span>Item: KSh ${Number(d.itemPrice).toLocaleString()} | Fee: KSh ${Number(d.deliveryFee).toLocaleString()}</span><span>🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
-    ${codes}${getTimeline(d.status)}${actions}${editDeleteBtns}
+    ${declineHistoryHTML}${codes}${getTimeline(d.status)}${actions}${editDeleteBtns}
   </div>`;
 }
 
@@ -660,21 +760,26 @@ async function refreshAll() {
       <div class="stat-card"><div class="stat-value">${pending}</div><div class="stat-label">Pending</div></div>
       <div class="stat-card"><div class="stat-value">${completed}</div><div class="stat-label">Done</div></div>
       <div class="stat-card"><div class="stat-value green">KSh ${Math.round(salesRevenue).toLocaleString()}</div><div class="stat-label">Sales Revenue</div></div>
-      <div class="stat-card"><div class="stat-value" style="color:#f59e0b">KSh ${Math.round(totalDeliveryFees).toLocaleString()}</div><div class="stat-label">Delivery Fees</div></div>
+      <div class="stat-card"><div class="stat-value orange">KSh ${Math.round(totalDeliveryFees).toLocaleString()}</div><div class="stat-label">Delivery Fees</div></div>
     `;
     
     if (currentUser.role === 'retailer') { document.getElementById('retailerStats').innerHTML = statsHTML; renderDeliveries('retailerDeliveries', allDeliveries, false); }
     if (currentUser.role === 'dispatcher') { document.getElementById('dispatcherStats').innerHTML = statsHTML; renderDeliveries('dispatcherDeliveries', allDeliveries, false); updateRiderList(); }
     if (currentUser.role === 'rider') {
-      const open = allDeliveries.filter(d => d.status === 'unassigned');
-      renderDeliveries('riderOpenRequests', open, true, 'accept');
       let riderId = document.getElementById("riderSelect").value;
       if (!riderId) {
         const savedRiderId = localStorage.getItem('my_rider_id');
         if (savedRiderId) { riderId = savedRiderId; document.getElementById('riderSelect').value = riderId; }
       }
+      
       if (riderId) {
         localStorage.setItem('my_rider_id', riderId);
+        
+        // Pending assignments (offered to this rider)
+        const pendingAssignments = allDeliveries.filter(d => d.status === 'pending_acceptance' && d.pendingRiderId === riderId);
+        renderDeliveries('riderPendingAssignments', pendingAssignments, true, 'decline');
+        
+        // Active jobs (accepted by this rider)
         const activeJob = allDeliveries.find(d => d.assignedRiderId === riderId && d.status !== 'delivered');
         const activeJobBox = document.getElementById('currentActiveJobBox');
         const activeJobContent = document.getElementById('currentActiveJobContent');
@@ -685,8 +790,9 @@ async function refreshAll() {
           renderDeliveries('riderActiveJobs', otherJobs, true, 'action');
         } else {
           activeJobBox.style.display = 'none';
-          document.getElementById('riderActiveJobs').innerHTML = '<div class="empty-state"><p>No active jobs. Accept one from Open Requests!</p></div>';
+          document.getElementById('riderActiveJobs').innerHTML = '<div class="empty-state"><p>No active jobs</p></div>';
         }
+        
         const myEarnings = allDeliveries.filter(d => d.assignedRiderId === riderId && d.status === 'delivered').reduce((s, d) => s + Number(d.deliveryFee||0), 0);
         const myCompleted = allDeliveries.filter(d => d.assignedRiderId === riderId && d.status === 'delivered').length;
         document.getElementById('riderStats').innerHTML = `
@@ -696,7 +802,8 @@ async function refreshAll() {
         `;
       } else { 
         document.getElementById('currentActiveJobBox').style.display = 'none';
-        document.getElementById('riderActiveJobs').innerHTML = '<div class="empty-state"><p>Select identity above to see jobs</p></div>'; 
+        document.getElementById('riderActiveJobs').innerHTML = '<div class="empty-state"><p>Select identity above to see jobs</p></div>';
+        document.getElementById('riderPendingAssignments').innerHTML = '<div class="empty-state"><p>Select identity to see pending assignments</p></div>';
       }
     }
   } catch (err) { console.error(err); showToast('Error loading data', 'error'); }
@@ -712,6 +819,12 @@ socket.on("delivery_update", (data) => {
   refreshAll();
   if (data.type === 'created' && currentUser && (currentUser.role === 'rider' || currentUser.role === 'dispatcher')) {
     showNotification(`New Order: ${data.delivery.customerName}`, `${data.delivery.itemDescription} to ${data.delivery.address}`);
+  }
+  if (data.type === 'assigned_to_rider' && currentUser && currentUser.role === 'rider') {
+    const riderId = document.getElementById("riderSelect").value;
+    if (data.riderId === riderId) {
+      showNotification(`New Assignment!`, `You've been offered delivery ${data.delivery.id}`);
+    }
   }
 });
 </script>
