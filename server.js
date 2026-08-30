@@ -98,7 +98,7 @@ app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
   delivery.status = 'assigned';
   delivery.assignedRiderId = riderId;
   rider.available = false;
-  io.emit('delivery_update', { type: 'accepted', delivery });
+  io.emit('delivery_update', { type: 'accepted', delivery, riderStatus: riders });
   res.json({ message: 'Accepted', delivery });
 });
 
@@ -109,7 +109,7 @@ app.post('/deliveries/:id/pickup', authenticateToken, (req, res) => {
   if (!delivery || delivery.status !== 'assigned') return res.status(400).json({ error: 'Invalid status' });
   if (delivery.pickupCode !== pickupCode) return res.status(400).json({ error: 'Invalid pickup code' });
   delivery.status = 'picked_up';
-  io.emit('delivery_update', { type: 'picked_up', delivery });
+  io.emit('delivery_update', { type: 'picked_up', delivery, riderStatus: riders });
   res.json({ message: 'Pickup confirmed', delivery });
 });
 
@@ -122,13 +122,25 @@ app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
   delivery.status = 'delivered';
   if (delivery.assignedRiderId) {
     const rider = riders.find(r => r.id === delivery.assignedRiderId);
-    if (rider) rider.available = true;
+    if (rider) {
+      rider.available = true;
+      io.emit('rider_available', { riderId: rider.id, riderName: rider.name });
+    }
   }
-  io.emit('delivery_update', { type: 'confirmed', delivery });
+  io.emit('delivery_update', { type: 'confirmed', delivery, riderStatus: riders });
   res.json({ message: 'Completed', delivery });
 });
 
-io.on('connection', (socket) => console.log('Connected:', socket.id));
+// Auto-refresh rider status every 5 seconds
+setInterval(() => {
+  io.emit('rider_status_update', riders);
+}, 5000);
+
+io.on('connection', (socket) => {
+  console.log('Connected:', socket.id);
+  // Send initial rider status
+  socket.emit('rider_status_update', riders);
+});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
