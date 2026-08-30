@@ -30,23 +30,30 @@
   .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 8px; font-size: 20px; width: auto; margin: 0; display: flex; align-items: center; justify-content: center; }
   .password-toggle svg { width: 20px; height: 20px; fill: currentColor; }
   .password-toggle:hover { color: #38bdf8; }
-  .dashboard-container { display: none; padding: 16px; max-width: 1200px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 14px; background: #1e293b; border-radius: 12px; border: 1px solid #334155; flex-wrap: wrap; gap: 12px; }
+  
+  /* HEADER FIXES */
+  .dashboard-container { display: none; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 14px 20px; background: #1e293b; border-radius: 12px; border: 1px solid #334155; }
   .header h1 { color: #38bdf8; margin: 0; font-size: 20px; }
-  .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
-  .role-badge { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+  .header-controls { display: flex; align-items: center; gap: 15px; flex-wrap: nowrap; justify-content: flex-end; }
+  
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; }
+  .role-badge { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; white-space: nowrap; }
   .role-retailer { background: #7c3aed; color: #ddd6fe; }
   .role-dispatcher { background: #059669; color: #a7f3d0; }
   .role-rider { background: #ea580c; color: #fed7aa; }
-  .logout-btn { background: #dc2626; color: white; width: auto; padding: 8px 16px; margin: 0; font-size: 14px; }
+  .logout-btn { background: #dc2626; color: white; width: auto; padding: 8px 16px; margin: 0; font-size: 14px; white-space: nowrap; }
+  
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; text-align: center; }
   .stat-value { font-size: 24px; font-weight: bold; color: #38bdf8; }
   .stat-value.green { color: #10b981; }
   .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
-  .currency-toggle { background: #334155; border: 1px solid #475569; border-radius: 8px; padding: 8px; color: #e2e8f0; font-size: 14px; cursor: pointer; margin-left: 12px; }
-  .currency-toggle:hover { background: #475569; }
+  
+  .currency-toggle { background: #334155; border: 1px solid #475569; border-radius: 8px; padding: 8px 12px; color: #e2e8f0; font-size: 14px; cursor: pointer; margin: 0; width: auto; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e2e8f0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 10px top 50%; padding-right: 30px; }
+  .currency-toggle:hover { background-color: #475569; }
+  .currency-toggle option { background: #1e293b; color: #e2e8f0; }
+
   .main-content { display: grid; gap: 16px; }
   .retailer-grid { grid-template-columns: 1fr; }
   .two-col-grid { grid-template-columns: 1fr; }
@@ -99,6 +106,10 @@
     .two-col-grid { grid-template-columns: 2fr 1fr; }
     .auth-container { margin: 80px auto; padding: 32px; }
   }
+  @media (max-width: 768px) {
+    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .header-controls { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  }
 </style>
 </head>
 <body>
@@ -113,7 +124,7 @@
 
 <div id="notificationPopup" class="notification-popup">
   <div class="notif-header">
-    <span> New Delivery!</span>
+    <span>🔔 New Delivery!</span>
     <button class="notif-close" onclick="hideNotification()">×</button>
   </div>
   <div id="notifMessage" style="font-size:13px; color:#e2e8f0; margin-top:8px;"></div>
@@ -168,8 +179,8 @@
       <span id="retailerName" style="font-weight:bold;"></span>
       <span class="role-badge role-retailer">RETAILER</span>
       <select id="retailerCurrencyToggle" class="currency-toggle" onchange="updateStatsCurrency('retailer')">
-        <option value="USD">USD ($)</option>
         <option value="KES">KES (KSh)</option>
+        <option value="USD">USD ($)</option>
       </select>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
@@ -189,8 +200,8 @@
       <div class="form-group" style="margin-top:12px;">
         <label>Currency</label>
         <select id="currency" onchange="updateCurrencyDisplay()">
-          <option value="USD">USD ($)</option>
           <option value="KES">KES (KSh)</option>
+          <option value="USD">USD ($)</option>
         </select>
       </div>
       <button onclick="logDelivery()">Log Delivery</button>
@@ -214,8 +225,8 @@
       <span id="dispatcherName" style="font-weight:bold;"></span>
       <span class="role-badge role-dispatcher">DISPATCHER</span>
       <select id="dispatcherCurrencyToggle" class="currency-toggle" onchange="updateStatsCurrency('dispatcher')">
-        <option value="USD">USD ($)</option>
         <option value="KES">KES (KSh)</option>
+        <option value="USD">USD ($)</option>
       </select>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
@@ -275,16 +286,15 @@
 <script>
 const socket = io();
 let currentToken = null, currentUser = null, isSignup = false, allDeliveries = [], riders = [];
-let currentCurrency = 'USD';
-let retailerViewCurrency = 'USD';
-let dispatcherViewCurrency = 'USD';
+let currentCurrency = 'KES';
+let retailerViewCurrency = 'KES';
+let dispatcherViewCurrency = 'KES';
 
-// Exchange rate: 1 USD = 130 KES (approximate)
-const EXCHANGE_RATE = 130;
+// ✅ UPDATED EXCHANGE RATE: 1 USD = 129 KES (Current Market Rate)
+const EXCHANGE_RATE = 129; 
 
 const currencySymbols = { 'USD': '$', 'KES': 'KSh' };
 
-// SVG Icons
 const EYE_ICON = `<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
 const EYE_OFF_ICON = `<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>`;
 
@@ -319,23 +329,16 @@ socket.on('rider_available', (data) => showToast(`${data.riderName} is now avail
 
 function togglePassword(fieldId, btn) {
   const p = document.getElementById(fieldId);
-  if (p.type === 'password') { 
-    p.type = 'text'; 
-    btn.innerHTML = EYE_OFF_ICON;
-  } else { 
-    p.type = 'password'; 
-    btn.innerHTML = EYE_ICON;
-  }
+  if (p.type === 'password') { p.type = 'text'; btn.innerHTML = EYE_OFF_ICON; } 
+  else { p.type = 'password'; btn.innerHTML = EYE_ICON; }
 }
 
 function updateCurrencyDisplay() {
   const select = document.getElementById('currency');
   currentCurrency = select.value;
   localStorage.setItem('preferred_currency', currentCurrency);
-  
   const itemPriceInput = document.getElementById('itemPrice');
   const deliveryFeeInput = document.getElementById('deliveryFee');
-  
   if (currentCurrency === 'USD') {
     itemPriceInput.placeholder = 'Item Price (e.g. 150)';
     deliveryFeeInput.placeholder = 'Delivery Fee (e.g. 10)';
@@ -347,22 +350,15 @@ function updateCurrencyDisplay() {
 
 function updateStatsCurrency(role) {
   const select = document.getElementById(role + 'CurrencyToggle');
-  if (role === 'retailer') {
-    retailerViewCurrency = select.value;
-  } else {
-    dispatcherViewCurrency = select.value;
-  }
+  if (role === 'retailer') retailerViewCurrency = select.value;
+  else dispatcherViewCurrency = select.value;
   refreshAll();
 }
 
 function convertCurrency(amount, fromCurrency, toCurrency) {
   if (fromCurrency === toCurrency) return amount;
-  if (fromCurrency === 'USD' && toCurrency === 'KES') {
-    return amount * EXCHANGE_RATE;
-  }
-  if (fromCurrency === 'KES' && toCurrency === 'USD') {
-    return amount / EXCHANGE_RATE;
-  }
+  if (fromCurrency === 'USD' && toCurrency === 'KES') return amount * EXCHANGE_RATE;
+  if (fromCurrency === 'KES' && toCurrency === 'USD') return amount / EXCHANGE_RATE;
   return amount;
 }
 
@@ -397,11 +393,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
   try {
     if (isSignup) {
       const confirmPassword = document.getElementById('confirmPassword').value;
-      if (password !== confirmPassword) {
-        showToast('Passwords do not match!', 'error');
-        btn.textContent = originalText; btn.disabled = false; return;
-      }
-      
+      if (password !== confirmPassword) { showToast('Passwords do not match!', 'error'); btn.textContent = originalText; btn.disabled = false; return; }
       const name = document.getElementById('name').value;
       const role = document.getElementById('role').value;
       const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
@@ -451,19 +443,13 @@ function showDashboard() {
     document.getElementById('retailerDashboard').style.display = 'block';
     document.getElementById('retailerName').textContent = currentUser.name;
     document.getElementById('retailerAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
-    if (document.getElementById('currency') && currentCurrency) {
-      document.getElementById('currency').value = currentCurrency;
-    }
-    if (document.getElementById('retailerCurrencyToggle')) {
-      document.getElementById('retailerCurrencyToggle').value = retailerViewCurrency;
-    }
+    if (document.getElementById('currency') && currentCurrency) document.getElementById('currency').value = currentCurrency;
+    if (document.getElementById('retailerCurrencyToggle')) document.getElementById('retailerCurrencyToggle').value = retailerViewCurrency;
   } else if (currentUser.role === 'dispatcher') {
     document.getElementById('dispatcherDashboard').style.display = 'block';
     document.getElementById('dispatcherName').textContent = currentUser.name;
     document.getElementById('dispatcherAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
-    if (document.getElementById('dispatcherCurrencyToggle')) {
-      document.getElementById('dispatcherCurrencyToggle').value = dispatcherViewCurrency;
-    }
+    if (document.getElementById('dispatcherCurrencyToggle')) document.getElementById('dispatcherCurrencyToggle').value = dispatcherViewCurrency;
   } else if (currentUser.role === 'rider') {
     document.getElementById('riderDashboard').style.display = 'block';
     document.getElementById('riderName').textContent = currentUser.name;
@@ -488,27 +474,18 @@ async function logDelivery() {
   const item = document.getElementById("itemDescription").value.trim();
   const itemPrice = document.getElementById("itemPrice").value.trim();
   const fee = document.getElementById("deliveryFee").value.trim();
-  const currency = document.getElementById('currency') ? document.getElementById('currency').value : 'USD';
+  const currency = document.getElementById('currency') ? document.getElementById('currency').value : 'KES';
   
   if (!name || !phone || !address || !item || !itemPrice || !fee) { showToast('Fill all fields', 'warning'); return; }
   try {
-    const res = await fetch("/deliveries", { 
-      method: "POST", 
-      headers: getAuthHeaders(), 
-      body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee, currency }) 
-    });
+    const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee, currency }) });
     if (!res.ok) {
       const err = await res.json();
       if (res.status === 403 || res.status === 401) { showToast('Session expired. Please login again.', 'error'); setTimeout(logout, 1500); return; }
       throw new Error(err.error || 'Failed');
     }
     const delivery = await res.json();
-    document.getElementById("customerName").value = ""; 
-    document.getElementById("customerPhone").value = ""; 
-    document.getElementById("address").value = ""; 
-    document.getElementById("itemDescription").value = ""; 
-    document.getElementById("itemPrice").value = ""; 
-    document.getElementById("deliveryFee").value = "";
+    document.getElementById("customerName").value = ""; document.getElementById("customerPhone").value = ""; document.getElementById("address").value = ""; document.getElementById("itemDescription").value = ""; document.getElementById("itemPrice").value = ""; document.getElementById("deliveryFee").value = "";
     showToast(`Delivery ${delivery.id} logged!`, 'success');
     refreshAll();
   } catch (err) { showToast(err.message, 'error'); }
@@ -555,7 +532,7 @@ function hideNotification() { document.getElementById('notificationPopup').class
 
 function showReceipt(d) {
   const riderName = d.assignedRiderId ? (riders.find(r => r.id === d.assignedRiderId)?.name || 'Unknown') : 'Unassigned';
-  const symbol = currencySymbols[d.currency] || '$';
+  const symbol = currencySymbols[d.currency] || 'KSh';
   document.getElementById('receiptContent').innerHTML = `
     <div class="receipt-row"><span>Receipt No:</span><strong>#${d.internalId}</strong></div>
     <div class="receipt-row"><span>Delivery ID:</span><strong>${d.id}</strong></div>
@@ -600,13 +577,13 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
   else if (d.status === "picked_up") codes = `<div style="margin-top:8px;"><small>Delivery Code: <span class="code-box">${d.deliveryCode}</span></small></div>`;
   const receiptBtn = d.status === 'delivered' ? `<button class="btn-receipt" onclick='showReceipt(${JSON.stringify(d).replace(/'/g,"\\'")})'>🧾 Receipt</button>` : '';
   const cardClass = isHighlighted ? 'delivery-card active-job' : 'delivery-card';
-  const symbol = currencySymbols[d.currency] || '$';
+  const symbol = currencySymbols[d.currency] || 'KSh';
   return `<div class="${cardClass}">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <strong>${d.id} - ${d.customerName}</strong><span class="status status-${d.status}">${d.status.replace("_"," ")}</span>
     </div>
     <small style="display:block; margin-top:4px;">${d.address} — ${d.itemDescription}</small>
-    <div class="delivery-meta"><span>Total: ${symbol}${Number(d.totalAmount).toLocaleString()}</span><span>🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
+    <div class="delivery-meta"><span>Total: ${symbol}${Number(d.totalAmount).toLocaleString()}</span><span> ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
     ${codes}${getTimeline(d.status)}${actions}
   </div>`;
 }
@@ -614,14 +591,14 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
 function renderDeliveries(elementId, list, showActions, actionType = null) {
   const el = document.getElementById(elementId);
   if (!el) return;
-  if (!list || list.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>No deliveries</p></div>'; return; }
+  if (!list || list.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No deliveries</p></div>'; return; }
   el.innerHTML = list.map(d => renderDeliveryCardHTML(d, showActions, actionType)).join("");
 }
 
 function updateRiderList() {
   const el = document.getElementById('riderList');
   if (!el) return;
-  el.innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? '<span style="color:#10b981">✅ Available</span>' : '<span style="color:#f59e0b">🚴 On delivery</span>'}</div>`).join('');
+  el.innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? '<span style="color:#10b981">✅ Available</span>' : '<span style="color:#f59e0b"> On delivery</span>'}</div>`).join('');
 }
 
 async function refreshAll() {
@@ -638,23 +615,21 @@ async function refreshAll() {
     const pending = allDeliveries.filter(d => d.status !== 'delivered').length;
     const completed = allDeliveries.filter(d => d.status === 'delivered').length;
     
-    // Determine view currency based on role
-    let viewCurrency = 'USD';
+    let viewCurrency = 'KES';
     if (currentUser.role === 'retailer') viewCurrency = retailerViewCurrency;
     else if (currentUser.role === 'dispatcher') viewCurrency = dispatcherViewCurrency;
     
-    // Calculate revenues in original currencies, then convert to view currency
     let salesRevenue = 0;
     let totalDeliveryFees = 0;
     
     allDeliveries.filter(d => d.status === 'delivered').forEach(d => {
-      const itemPriceInViewCurrency = convertCurrency(Number(d.itemPrice || 0), d.currency || 'USD', viewCurrency);
-      const deliveryFeeInViewCurrency = convertCurrency(Number(d.deliveryFee || 0), d.currency || 'USD', viewCurrency);
+      const itemPriceInViewCurrency = convertCurrency(Number(d.itemPrice || 0), d.currency || 'KES', viewCurrency);
+      const deliveryFeeInViewCurrency = convertCurrency(Number(d.deliveryFee || 0), d.currency || 'KES', viewCurrency);
       salesRevenue += itemPriceInViewCurrency;
       totalDeliveryFees += deliveryFeeInViewCurrency;
     });
     
-    const symbol = currencySymbols[viewCurrency] || '$';
+    const symbol = currencySymbols[viewCurrency] || 'KSh';
     
     const statsHTML = `
       <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total</div></div>
