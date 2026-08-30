@@ -49,7 +49,6 @@
   .stat-value.green { color: #10b981; }
   .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
   
-  /* ✅ FIXED CURRENCY TOGGLE: Bright green, no blocking background */
   .currency-toggle { 
     background: #0f172a; 
     border: 2px solid #10b981; 
@@ -141,7 +140,7 @@
 
 <div id="notificationPopup" class="notification-popup">
   <div class="notif-header">
-    <span> New Delivery!</span>
+    <span>🔔 New Delivery!</span>
     <button class="notif-close" onclick="hideNotification()">×</button>
   </div>
   <div id="notifMessage" style="font-size:13px; color:#e2e8f0; margin-top:8px;"></div>
@@ -157,7 +156,7 @@
 </div>
 
 <div id="authSection" class="auth-container" style="display:none;">
-  <h1>🚀 Reflex</h1>
+  <h1> Reflex</h1>
   <p class="subtitle">Delivery Tracking System</p>
   <form id="authForm">
     <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe" required></div>
@@ -195,7 +194,7 @@
     <div class="header-controls">
       <span id="retailerName" style="font-weight:bold;"></span>
       <span class="role-badge role-retailer">RETAILER</span>
-      <select id="retailerCurrencyToggle" class="currency-toggle" onchange="updateStatsCurrency('retailer')">
+      <select id="retailerCurrencyToggle" class="currency-toggle" onchange="syncCurrencyFromHeader('retailer')">
         <option value="KES">KES (KSh)</option>
         <option value="USD">USD ($)</option>
       </select>
@@ -216,7 +215,7 @@
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label>Currency</label>
-        <select id="currency" onchange="updateCurrencyDisplay()">
+        <select id="currency" class="currency-toggle" style="border-color:#38bdf8; color:#38bdf8; background-image: url(&quot;data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2338bdf8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E&quot;);" onchange="syncCurrencyFromForm()">
           <option value="KES">KES (KSh)</option>
           <option value="USD">USD ($)</option>
         </select>
@@ -241,7 +240,7 @@
     <div class="header-controls">
       <span id="dispatcherName" style="font-weight:bold;"></span>
       <span class="role-badge role-dispatcher">DISPATCHER</span>
-      <select id="dispatcherCurrencyToggle" class="currency-toggle" onchange="updateStatsCurrency('dispatcher')">
+      <select id="dispatcherCurrencyToggle" class="currency-toggle" onchange="syncCurrencyFromHeader('dispatcher')">
         <option value="KES">KES (KSh)</option>
         <option value="USD">USD ($)</option>
       </select>
@@ -252,7 +251,7 @@
   <div class="main-content two-col-grid">
     <div class="panel">
       <h2>All Deliveries</h2>
-      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
+      <div class="search-bar"><span class="search-icon"></span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
       <div id="dispatcherDeliveries"></div>
     </div>
     <div class="panel">
@@ -349,10 +348,47 @@ function togglePassword(fieldId, btn) {
   else { p.type = 'password'; btn.innerHTML = EYE_ICON; }
 }
 
+// ✅ SYNC: When header currency changes, update form currency too
+function syncCurrencyFromHeader(role) {
+  const headerSelect = document.getElementById(role + 'CurrencyToggle');
+  const formSelect = document.getElementById('currency');
+  const newCurrency = headerSelect.value;
+  
+  if (role === 'retailer') {
+    retailerViewCurrency = newCurrency;
+    currentCurrency = newCurrency;
+  } else {
+    dispatcherViewCurrency = newCurrency;
+  }
+  
+  // Update form to match header
+  if (formSelect) {
+    formSelect.value = newCurrency;
+  }
+  
+  updateCurrencyDisplay();
+  refreshAll();
+}
+
+// ✅ SYNC: When form currency changes, update header currency too
+function syncCurrencyFromForm() {
+  const formSelect = document.getElementById('currency');
+  const newCurrency = formSelect.value;
+  currentCurrency = newCurrency;
+  
+  // Update header to match form
+  if (currentUser.role === 'retailer') {
+    const headerSelect = document.getElementById('retailerCurrencyToggle');
+    if (headerSelect) {
+      headerSelect.value = newCurrency;
+      retailerViewCurrency = newCurrency;
+    }
+  }
+  
+  updateCurrencyDisplay();
+}
+
 function updateCurrencyDisplay() {
-  const select = document.getElementById('currency');
-  currentCurrency = select.value;
-  localStorage.setItem('preferred_currency', currentCurrency);
   const itemPriceInput = document.getElementById('itemPrice');
   const deliveryFeeInput = document.getElementById('deliveryFee');
   if (currentCurrency === 'USD') {
@@ -599,7 +635,7 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
       <strong>${d.id} - ${d.customerName}</strong><span class="status status-${d.status}">${d.status.replace("_"," ")}</span>
     </div>
     <small style="display:block; margin-top:4px;">${d.address} — ${d.itemDescription}</small>
-    <div class="delivery-meta"><span>Total: ${symbol}${Number(d.totalAmount).toLocaleString()}</span><span> ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
+    <div class="delivery-meta"><span>Total: ${symbol}${Number(d.totalAmount).toLocaleString()}</span><span> 🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
     ${codes}${getTimeline(d.status)}${actions}
   </div>`;
 }
@@ -614,7 +650,7 @@ function renderDeliveries(elementId, list, showActions, actionType = null) {
 function updateRiderList() {
   const el = document.getElementById('riderList');
   if (!el) return;
-  el.innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? '<span style="color:#10b981">✅ Available</span>' : '<span style="color:#f59e0b"> On delivery</span>'}</div>`).join('');
+  el.innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? '<span style="color:#10b981">✅ Available</span>' : '<span style="color:#f59e0b">🚴 On delivery</span>'}</div>`).join('');
 }
 
 async function refreshAll() {
