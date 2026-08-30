@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Reflex - Delivery Tracking</title>
-<link rel="manifest" href="/manifest.json?v=2">
+<link rel="manifest" href="/manifest.json">
 <script src="/socket.io/socket.io.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -170,7 +170,7 @@
   <div id="installModalOverlay" class="install-modal-overlay">
     <div class="install-modal">
       <button class="modal-close" onclick="hideInstallModal()">×</button>
-      <h2> Install Reflex App</h2>
+      <h2>📱 Install Reflex App</h2>
       <p>Get the best experience by installing our app. Works offline and sends instant notifications!</p>
       <div class="modal-buttons">
         <button class="btn-install" onclick="installApp()">Install Now</button>
@@ -197,7 +197,7 @@
   </div>
 
   <div id="authSection" class="auth-container" style="display:none;">
-    <h1>🚀 Reflex</h1>
+    <h1> Reflex</h1>
     <p class="subtitle">Delivery Tracking System</p>
     <div id="authMessage"></div>
     <form id="authForm">
@@ -207,7 +207,7 @@
         <label>Password</label>
         <div class="password-wrapper">
           <input type="password" id="password" placeholder="Enter password" required>
-          <button type="button" class="password-toggle" onclick="togglePassword()">️</button>
+          <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
         </div>
       </div>
       <div class="form-group" id="roleGroup" style="display:none;"><label>Role</label><select id="role"><option value="retailer">Retailer Staff</option><option value="dispatcher">Dispatcher</option><option value="rider">Rider</option></select></div>
@@ -268,7 +268,7 @@
     <div class="main-content two-col-grid">
       <div class="panel">
         <h2>All Active Deliveries</h2>
-        <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="dispatcherSearch" placeholder="Search deliveries..." oninput="filterDeliveries()"></div>
+        <div class="search-bar"><span class="search-icon"></span><input type="text" id="dispatcherSearch" placeholder="Search deliveries..." oninput="filterDeliveries()"></div>
         <div id="dispatcherDeliveries"></div>
       </div>
       <div class="panel">
@@ -306,7 +306,7 @@
         <div id="riderActiveJobs"></div>
       </div>
       <div class="panel">
-        <h2> Open Requests</h2>
+        <h2>📢 Open Requests</h2>
         <small>Deliveries waiting for a rider</small>
         <div id="riderOpenRequests"></div>
       </div>
@@ -318,7 +318,7 @@
   let currentToken = null, currentUser = null, isSignup = false, deferredPrompt = null, allDeliveries = [], pendingAction = null, riders = [];
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js?v=2').catch(err => console.error('SW failed:', err));
+    navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW failed:', err));
   }
 
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -365,7 +365,7 @@
   function togglePassword() {
     const p = document.getElementById('password');
     const b = document.querySelector('.password-toggle');
-    if (p.type === 'password') { p.type = 'text'; b.textContent = ''; } 
+    if (p.type === 'password') { p.type = 'text'; b.textContent = '🙈'; } 
     else { p.type = 'password'; b.textContent = '👁️'; }
   }
 
@@ -393,20 +393,35 @@
       if (isSignup) {
         const name = document.getElementById('name').value;
         const role = document.getElementById('role').value;
-        const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
+        const res = await fetch('/auth/signup', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ name, email, password, role }) 
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        const loginRes = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        if (!res.ok) throw new Error(data.error || 'Signup failed');
+        
+        const loginRes = await fetch('/auth/login', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ email, password }) 
+        });
         const loginData = await loginRes.json();
-        if (!loginRes.ok) throw new Error(loginData.error);
-        currentToken = loginData.token; currentUser = loginData.user;
+        if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
+        
+        currentToken = loginData.token; 
+        currentUser = loginData.user;
         localStorage.setItem('reflex_token', currentToken);
         localStorage.setItem('reflex_user', JSON.stringify(currentUser));
         showToast('Account created successfully!', 'success');
         showDashboard();
         if (!localStorage.getItem('reflex_installed')) setTimeout(showInstallModal, 1000);
       } else {
-        const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const res = await fetch('/auth/login', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ email, password }) 
+        });
         const data = await res.json();
         
         if (!res.ok) {
@@ -416,7 +431,8 @@
           throw new Error(data.error || 'Login failed. Please check your credentials.');
         }
         
-        currentToken = data.token; currentUser = data.user; 
+        currentToken = data.token; 
+        currentUser = data.user; 
         localStorage.setItem('reflex_token', currentToken);
         localStorage.setItem('reflex_user', JSON.stringify(currentUser));
         showToast(`Welcome back, ${currentUser.name}!`, 'success');
@@ -425,6 +441,7 @@
       }
     } catch (err) { 
       showToast(err.message, 'error'); 
+      console.error('Auth error:', err);
     } finally {
       btn.textContent = originalText;
       btn.disabled = false;
@@ -435,27 +452,54 @@
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    const icons = { success: '✅', error: '❌', warning: '⚠️', info: '️' };
+    const icons = { success: '✅', error: '', warning: '⚠️', info: 'ℹ️' };
     toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
     container.appendChild(toast);
-    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(400px)'; setTimeout(() => toast.remove(), 300); }, 4000);
+    setTimeout(() => { 
+      toast.style.opacity = '0'; 
+      toast.style.transform = 'translateX(400px)'; 
+      setTimeout(() => toast.remove(), 300); 
+    }, 4000);
   }
 
-  function showConfirmDialog(message, action) { document.getElementById('confirmMessage').textContent = message; pendingAction = action; document.getElementById('confirmDialogOverlay').classList.add('show'); }
-  function hideConfirmDialog() { document.getElementById('confirmDialogOverlay').classList.remove('show'); pendingAction = null; }
-  function executeConfirmedAction() { if (pendingAction) pendingAction(); hideConfirmDialog(); }
-  function confirmLogout() { showConfirmDialog('Are you sure you want to logout?', logout); }
+  function showConfirmDialog(message, action) { 
+    document.getElementById('confirmMessage').textContent = message; 
+    pendingAction = action; 
+    document.getElementById('confirmDialogOverlay').classList.add('show'); 
+  }
+  function hideConfirmDialog() { 
+    document.getElementById('confirmDialogOverlay').classList.remove('show'); 
+    pendingAction = null; 
+  }
+  function executeConfirmedAction() { 
+    if (pendingAction) pendingAction(); 
+    hideConfirmDialog(); 
+  }
+  function confirmLogout() { 
+    showConfirmDialog('Are you sure you want to logout?', logout); 
+  }
   
   function logout() { 
-    currentToken = null; currentUser = null; 
-    localStorage.removeItem('reflex_token'); localStorage.removeItem('reflex_user');
+    currentToken = null; 
+    currentUser = null; 
+    localStorage.removeItem('reflex_token'); 
+    localStorage.removeItem('reflex_user');
     document.querySelectorAll('.dashboard-container').forEach(d => d.style.display = 'none');
     document.getElementById('authSection').style.display = 'block'; 
     document.getElementById('authForm').reset();
     showToast('Logged out successfully', 'info');
   }
   
-  function getAuthHeaders() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }; }
+  function getAuthHeaders() { 
+    if (!currentToken) {
+      console.error('No token available for requests');
+      return {};
+    }
+    return { 
+      'Content-Type': 'application/json', 
+      'Authorization': `Bearer ${currentToken}` 
+    }; 
+  }
 
   function showDashboard() {
     document.getElementById('authSection').style.display = 'none';
@@ -476,17 +520,24 @@
     refreshAll();
   }
 
-  function showInstallModal() { document.getElementById('installModalOverlay').classList.add('show'); }
-  function hideInstallModal() { document.getElementById('installModalOverlay').classList.remove('show'); }
+  function showInstallModal() { 
+    document.getElementById('installModalOverlay').classList.add('show'); 
+  }
+  function hideInstallModal() { 
+    document.getElementById('installModalOverlay').classList.remove('show'); 
+  }
   async function installApp() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') { localStorage.setItem('reflex_installed', 'true'); showToast('App installed! Check your home screen', 'success'); }
+      if (outcome === 'accepted') { 
+        localStorage.setItem('reflex_installed', 'true'); 
+        showToast('App installed! Check your home screen', 'success'); 
+      }
       deferredPrompt = null;
       hideInstallModal();
     } else {
-      showToast('To install: Open browser menu and select "Add to Home Screen" or "Install App"', 'info');
+      showToast('To install: Open browser menu and select "Add to Home Screen"', 'info');
       hideInstallModal();
     }
   }
@@ -509,7 +560,9 @@
     document.getElementById('receiptContent').innerHTML = html;
     document.getElementById('receiptOverlay').classList.add('show');
   }
-  function hideReceipt() { document.getElementById('receiptOverlay').classList.remove('show'); }
+  function hideReceipt() { 
+    document.getElementById('receiptOverlay').classList.remove('show'); 
+  }
 
   async function logDelivery() {
     const name = document.getElementById("customerName").value.trim();
@@ -517,58 +570,122 @@
     const address = document.getElementById("address").value.trim();
     const item = document.getElementById("itemDescription").value.trim();
     const fee = document.getElementById("deliveryFee").value.trim();
-    if (!name || !phone || !address || !item || !fee) { showToast('Please fill in all fields including fee', 'warning'); return; }
-    const body = { customerName: name, customerPhone: phone, address: address, itemDescription: item, deliveryFee: fee };
+    
+    if (!name || !phone || !address || !item || !fee) { 
+      showToast('Please fill in all fields including fee', 'warning'); 
+      return; 
+    }
+    
+    const body = { 
+      customerName: name, 
+      customerPhone: phone, 
+      address: address, 
+      itemDescription: item, 
+      deliveryFee: fee 
+    };
+    
     try {
-      const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
-      if (!res.ok) throw new Error('Failed to create delivery');
+      const headers = getAuthHeaders();
+      if (!headers.Authorization) {
+        throw new Error('Not authenticated. Please login again.');
+      }
+      
+      const res = await fetch("/deliveries", { 
+        method: "POST", 
+        headers: headers, 
+        body: JSON.stringify(body) 
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to create delivery');
+      }
+      
       const delivery = await res.json();
-      document.getElementById("customerName").value = ""; document.getElementById("customerPhone").value = ""; document.getElementById("address").value = ""; document.getElementById("itemDescription").value = ""; document.getElementById("deliveryFee").value = "";
+      
+      // Clear form
+      document.getElementById("customerName").value = ""; 
+      document.getElementById("customerPhone").value = ""; 
+      document.getElementById("address").value = ""; 
+      document.getElementById("itemDescription").value = ""; 
+      document.getElementById("deliveryFee").value = "";
+      
       showToast(`Delivery ${delivery.id} logged successfully!`, 'success');
       await refreshAll();
     } catch (err) {
+      console.error('Create delivery error:', err);
       showToast(err.message, 'error');
     }
   }
 
   async function acceptDelivery(id) {
     const riderId = document.getElementById("riderSelect").value;
-    if (!riderId) { showToast('Please select your rider identity first', 'warning'); return; }
+    if (!riderId) { 
+      showToast('Please select your rider identity first', 'warning'); 
+      return; 
+    }
     try {
-      const res = await fetch(`/deliveries/${id}/accept`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId }) });
+      const res = await fetch(`/deliveries/${id}/accept`, { 
+        method: "POST", 
+        headers: getAuthHeaders(), 
+        body: JSON.stringify({ riderId }) 
+      });
       const result = await res.json();
-      if (result.error) showToast(result.error, 'error'); else showToast(`Delivery ${id} accepted!`, 'success');
+      if (result.error) showToast(result.error, 'error'); 
+      else showToast(`Delivery ${id} accepted!`, 'success');
       await refreshAll();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { 
+      showToast(err.message, 'error'); 
+    }
   }
 
   async function confirmPickup(id) {
-    const code = prompt("Enter PICKUP code:"); if (!code) return;
+    const code = prompt("Enter PICKUP code:"); 
+    if (!code) return;
     try {
-      const res = await fetch(`/deliveries/${id}/pickup`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ pickupCode: code }) });
+      const res = await fetch(`/deliveries/${id}/pickup`, { 
+        method: "POST", 
+        headers: getAuthHeaders(), 
+        body: JSON.stringify({ pickupCode: code }) 
+      });
       const result = await res.json();
-      if (result.error) showToast(result.error, 'error'); else showToast('Pickup confirmed!', 'success');
+      if (result.error) showToast(result.error, 'error'); 
+      else showToast('Pickup confirmed!', 'success');
       await refreshAll();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { 
+      showToast(err.message, 'error'); 
+    }
   }
 
   async function confirmDelivery(id) {
-    const code = prompt("Enter DELIVERY code:"); if (!code) return;
+    const code = prompt("Enter DELIVERY code:"); 
+    if (!code) return;
     try {
-      const res = await fetch(`/deliveries/${id}/confirm`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ confirmationCode: code }) });
+      const res = await fetch(`/deliveries/${id}/confirm`, { 
+        method: "POST", 
+        headers: getAuthHeaders(), 
+        body: JSON.stringify({ confirmationCode: code }) 
+      });
       const result = await res.json();
-      if (result.error) showToast(result.error, 'error'); else showToast('Delivery completed!', 'success');
+      if (result.error) showToast(result.error, 'error'); 
+      else showToast('Delivery completed!', 'success');
       await refreshAll();
-    } catch (err) { showToast(err.message, 'error'); }
+    } catch (err) { 
+      showToast(err.message, 'error'); 
+    }
   }
 
   function showNotification(title, message) {
     document.getElementById('notifMessage').innerHTML = `<strong>${title}</strong><br>${message}`;
     document.getElementById('notificationPopup').classList.add('show');
     playBeep();
-    setTimeout(() => { document.getElementById('notificationPopup').classList.remove('show'); }, 5000);
+    setTimeout(() => { 
+      document.getElementById('notificationPopup').classList.remove('show'); 
+    }, 5000);
   }
-  function hideNotification() { document.getElementById('notificationPopup').classList.remove('show'); }
+  function hideNotification() { 
+    document.getElementById('notificationPopup').classList.remove('show'); 
+  }
 
   function getTimeline(status) {
     const steps = ['unassigned', 'assigned', 'picked_up', 'delivered'];
@@ -582,15 +699,26 @@
 
   function filterDeliveries() {
     const searchTerm = (document.getElementById('retailerSearch')?.value || document.getElementById('dispatcherSearch')?.value || '').toLowerCase();
-    const filtered = allDeliveries.filter(d => d.customerName.toLowerCase().includes(searchTerm) || d.address.toLowerCase().includes(searchTerm) || d.itemDescription.toLowerCase().includes(searchTerm) || d.id.toLowerCase().includes(searchTerm));
+    const filtered = allDeliveries.filter(d => 
+      d.customerName.toLowerCase().includes(searchTerm) || 
+      d.address.toLowerCase().includes(searchTerm) || 
+      d.itemDescription.toLowerCase().includes(searchTerm) || 
+      d.id.toLowerCase().includes(searchTerm)
+    );
     if (currentUser.role === 'retailer') renderDeliveries('retailerDeliveries', filtered, false);
     else if (currentUser.role === 'dispatcher') renderDeliveries('dispatcherDeliveries', filtered, false);
   }
 
   function renderDeliveries(elementId, list, showActions, actionType = null) {
     const el = document.getElementById(elementId);
-    if (!el) return;
-    if (!list || list.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No deliveries found</p></div>'; return; }
+    if (!el) {
+      console.error(`Element ${elementId} not found`);
+      return;
+    }
+    if (!list || list.length === 0) { 
+      el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No deliveries found</p></div>'; 
+      return; 
+    }
     el.innerHTML = list.map(d => {
       let actions = "";
       if (showActions && currentUser.role === 'rider') {
@@ -602,7 +730,7 @@
       if (d.status === "assigned") codes = `<div style="margin-top:8px;"><small>Pickup Code: <span class="code-box">${d.pickupCode}</span></small></div>`;
       else if (d.status === "picked_up") codes = `<div style="margin-top:8px;"><small>Delivery Code: <span class="code-box">${d.deliveryCode}</span></small></div>`;
       
-      const receiptBtn = d.status === 'delivered' ? `<button class="btn-receipt" onclick='showReceipt(${JSON.stringify(d).replace(/'/g, "\\'")})'>🧾 View Receipt</button>` : '';
+      const receiptBtn = d.status === 'delivered' ? `<button class="btn-receipt" onclick='showReceipt(${JSON.stringify(d).replace(/'/g, "\\'")})'> View Receipt</button>` : '';
 
       return `<div class="delivery-card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -624,15 +752,26 @@
 
   async function refreshAll() {
     try {
-      const deliveriesRes = await fetch("/deliveries", { headers: getAuthHeaders() });
-      if (!deliveriesRes.ok) throw new Error('Failed to fetch deliveries');
+      console.log('Refreshing data... Token exists:', !!currentToken);
+      
+      const headers = getAuthHeaders();
+      if (!headers.Authorization) {
+        throw new Error('Authentication required. Please login.');
+      }
+      
+      const deliveriesRes = await fetch("/deliveries", { headers: headers });
+      if (!deliveriesRes.ok) {
+        const errorData = await deliveriesRes.json();
+        throw new Error(errorData.error || 'Failed to fetch deliveries');
+      }
       const deliveries = await deliveriesRes.json();
       
-      const ridersRes = await fetch("/riders", { headers: getAuthHeaders() });
+      const ridersRes = await fetch("/riders", { headers: headers });
       if (!ridersRes.ok) throw new Error('Failed to fetch riders');
       riders = await ridersRes.json();
       
       allDeliveries = deliveries;
+      console.log('Loaded deliveries:', deliveries.length);
 
       const total = deliveries.length;
       const pending = deliveries.filter(d => d.status !== 'delivered').length;
@@ -668,7 +807,7 @@
         renderDeliveries('dispatcherDeliveries', deliveries, false);
         const riderListEl = document.getElementById("riderList");
         if (riderListEl) {
-          riderListEl.innerHTML = riders.length ? riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? "✅ Available" : " On delivery"}</div>`).join("") : '<div class="empty-state"><div class="empty-state-icon">🏍️</div><p>No riders available</p></div>';
+          riderListEl.innerHTML = riders.length ? riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? "✅ Available" : "🚴 On delivery"}</div>`).join("") : '<div class="empty-state"><div class="empty-state-icon">🏍️</div><p>No riders available</p></div>';
         }
       }
       if (currentUser.role === 'rider') {
@@ -680,7 +819,7 @@
           renderDeliveries('riderActiveJobs', myJobs, true, 'action');
         } else {
           const activeJobsEl = document.getElementById("riderActiveJobs");
-          if (activeJobsEl) activeJobsEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Select your identity above to see jobs</p></div>';
+          if (activeJobsEl) activeJobsEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👆</div><p>Select your identity above to see jobs</p></div>';
         }
       }
     } catch (err) {
@@ -689,10 +828,12 @@
     }
   }
 
-  function loadRiderView() { refreshAll(); }
+  function loadRiderView() { 
+    refreshAll(); 
+  }
 
   socket.on("delivery_update", (data) => {
-    console.log('Socket update:', data);
+    console.log('Socket update received:', data);
     refreshAll();
     if (data.type === 'created' && currentUser && (currentUser.role === 'rider' || currentUser.role === 'dispatcher')) {
       const d = data.delivery;
