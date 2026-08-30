@@ -53,17 +53,9 @@ app.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = users.find(u => u.email === email);
-    
-    // ️ EXACT ERROR MESSAGE FOR FRONTEND
-    if (!user) {
-      return res.status(404).json({ error: 'Account does not exist. Please sign up.' });
-    }
-
+    if (!user) return res.status(404).json({ error: 'Account does not exist. Please sign up.' });
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
-      return res.status(400).json({ error: 'Invalid password.' });
-    }
-
+    if (!valid) return res.status(400).json({ error: 'Invalid password.' });
     const token = jwt.sign({ userId: user.id, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
   } catch (error) { res.status(500).json({ error: 'Server error during login.' }); }
@@ -72,22 +64,20 @@ app.post('/auth/login', async (req, res) => {
 app.get('/riders', authenticateToken, (req, res) => res.json(riders));
 app.get('/deliveries', authenticateToken, (req, res) => res.json(deliveries));
 
-app.get('/riders/:riderId/deliveries', authenticateToken, (req, res) => {
-  const { riderId } = req.params;
-  res.json(deliveries.filter(d => d.assignedRiderId === riderId));
-});
-
 app.post('/deliveries', authenticateToken, (req, res) => {
   const { customerName, customerPhone, address, itemDescription, deliveryFee } = req.body;
   
-  // Professional ID format: REF-2026-001
+  // Generate Professional ID
   const formattedId = `REF-2026-${String(deliveryIdCounter).padStart(3, '0')}`;
 
   const newDelivery = {
     id: formattedId,
     internalId: deliveryIdCounter++,
-    customerName, customerPhone, address, itemDescription,
-    deliveryFee: deliveryFee || '500', // Default fee if not provided
+    customerName, 
+    customerPhone, 
+    address, 
+    itemDescription,
+    deliveryFee: deliveryFee || '0',
     status: 'unassigned', 
     assignedRiderId: null,
     pickupCode: Math.floor(1000 + Math.random() * 9000).toString(),
