@@ -131,14 +131,10 @@ app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
   res.json({ message: 'Completed', delivery });
 });
 
-// Auto-refresh rider status every 5 seconds
-setInterval(() => {
-  io.emit('rider_status_update', riders);
-}, 5000);
+setInterval(() => { io.emit('rider_status_update', riders); }, 5000);
 
 io.on('connection', (socket) => {
   console.log('Connected:', socket.id);
-  // Send initial rider status
   socket.emit('rider_status_update', riders);
 });
 
