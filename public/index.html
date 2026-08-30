@@ -110,7 +110,7 @@
 <body>
 
 <div id="splashScreen">
-  <div class="splash-logo">🚀 Reflex</div>
+  <div class="splash-logo"> Reflex</div>
   <div class="splash-spinner"></div>
   <div style="color:#94a3b8; margin-top:20px;">Loading...</div>
 </div>
@@ -128,7 +128,7 @@
 <div id="receiptOverlay" class="receipt-overlay">
   <div class="receipt-modal">
     <button class="modal-close" onclick="hideReceipt()">×</button>
-    <h2>🧾 DELIVERY RECEIPT</h2>
+    <h2> DELIVERY RECEIPT</h2>
     <div id="receiptContent"></div>
     <button class="btn-print" onclick="window.print()">🖨️ Print Receipt</button>
   </div>
@@ -408,7 +408,6 @@ async function logDelivery() {
   
   if (!name || !phone || !address || !item || !itemPrice || !fee) { showToast('Fill all fields', 'warning'); return; }
   try {
-    // Hardcoded to KES to prevent currency bugs
     const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee, currency: 'KES' }) });
     if (!res.ok) {
       const err = await res.json();
@@ -512,7 +511,7 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
       <strong>${d.id} - ${d.customerName}</strong><span class="status status-${d.status}">${d.status.replace("_"," ")}</span>
     </div>
     <small style="display:block; margin-top:4px;">${d.address} — ${d.itemDescription}</small>
-    <div class="delivery-meta"><span>Total: KSh ${Number(d.totalAmount).toLocaleString()}</span><span>🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
+    <div class="delivery-meta"><span>Item: KSh ${Number(d.itemPrice).toLocaleString()} | Fee: KSh ${Number(d.deliveryFee).toLocaleString()}</span><span> ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
     ${codes}${getTimeline(d.status)}${actions}
   </div>`;
 }
@@ -544,7 +543,6 @@ async function refreshAll() {
     const pending = allDeliveries.filter(d => d.status !== 'delivered').length;
     const completed = allDeliveries.filter(d => d.status === 'delivered').length;
     
-    // Pure KES calculation - no conversion logic
     let salesRevenue = 0;
     let totalDeliveryFees = 0;
     
