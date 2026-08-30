@@ -15,8 +15,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 const JWT_SECRET = 'reflex-prototype-secret-key-2026';
 
 const users = []; 
-
-// ✅ FIX: All riders start as available: true
 const riders = [
   { id: 'r1', name: 'John Rider', available: true },
   { id: 'r2', name: 'Jane Rider', available: true }, 
@@ -24,7 +22,6 @@ const riders = [
   { id: 'r4', name: 'Faith Nyambura', available: true },
   { id: 'r5', name: 'David Kimani', available: true }
 ];
-
 const deliveries = []; 
 let deliveryIdCounter = 1;
 let userIdCounter = 1;
@@ -90,6 +87,50 @@ app.post('/deliveries', authenticateToken, (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed to create delivery' }); }
 });
 
+// ✅ NEW: Edit Delivery Route
+app.put('/deliveries/:id', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.params;
+    const delivery = deliveries.find(d => d.id === id);
+    if (!delivery) return res.status(404).json({ error: 'Delivery not found' });
+    
+    // Safety: Only allow editing if it hasn't been assigned to a rider yet
+    if (delivery.status !== 'unassigned') {
+      return res.status(400).json({ error: 'Cannot edit a delivery that has already been assigned.' });
+    }
+
+    const { customerName, customerPhone, address, itemDescription, itemPrice, deliveryFee } = req.body;
+    delivery.customerName = customerName;
+    delivery.customerPhone = customerPhone;
+    delivery.address = address;
+    delivery.itemDescription = itemDescription;
+    delivery.itemPrice = itemPrice;
+    delivery.deliveryFee = deliveryFee;
+    delivery.totalAmount = ((Number(itemPrice) || 0) + (Number(deliveryFee) || 0)).toString();
+
+    io.emit('delivery_update', { type: 'updated', delivery });
+    res.json({ message: 'Updated successfully', delivery });
+  } catch (error) { res.status(500).json({ error: 'Failed to update delivery' }); }
+});
+
+// ✅ NEW: Delete Delivery Route
+app.delete('/deliveries/:id', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.params;
+    const index = deliveries.findIndex(d => d.id === id);
+    if (index === -1) return res.status(404).json({ error: 'Delivery not found' });
+    
+    // Safety: Only allow deleting if it hasn't been assigned
+    if (deliveries[index].status !== 'unassigned') {
+      return res.status(400).json({ error: 'Cannot delete a delivery that has already been assigned.' });
+    }
+
+    deliveries.splice(index, 1);
+    io.emit('delivery_update', { type: 'deleted', id });
+    res.json({ message: 'Deleted successfully' });
+  } catch (error) { res.status(500).json({ error: 'Failed to delete delivery' }); }
+});
+
 app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { riderId } = req.body; 
@@ -102,7 +143,7 @@ app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
   
   delivery.status = 'assigned';
   delivery.assignedRiderId = riderId;
-  rider.available = false; // Now they are truly busy
+  rider.available = false;
   
   io.emit('delivery_update', { type: 'accepted', delivery, riderStatus: riders });
   res.json({ message: 'Accepted', delivery });
@@ -130,7 +171,7 @@ app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
   if (delivery.assignedRiderId) {
     const rider = riders.find(r => r.id === delivery.assignedRiderId);
     if (rider) {
-      rider.available = true; // Free them up
+      rider.available = true;
       io.emit('rider_available', { riderId: rider.id, riderName: rider.name });
     }
   }
