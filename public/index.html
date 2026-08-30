@@ -25,7 +25,7 @@
   button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; font-size: 16px; padding: 14px; }
   button:hover { background: #0ea5e9; }
   button:disabled { background: #475569; cursor: not-allowed; }
-  .btn-accept { background: #10b981; }
+  .btn-accept { background: #10b981; color: white; }
   .btn-accept:hover { background: #059669; }
   .btn-decline { background: #dc2626; color: white; }
   .btn-decline:hover { background: #b91c1c; }
@@ -256,7 +256,7 @@
     </div>
     <div class="panel">
       <h2>All Deliveries</h2>
-      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="retailerSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
+      <div class="search-bar"><span class="search-icon"></span><input type="text" id="retailerSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
       <div id="retailerDeliveries"></div>
     </div>
   </div>
@@ -426,7 +426,7 @@ function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  const icons = { success: '✅', error: '❌', warning: '️', info: 'ℹ️' };
   toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
@@ -541,7 +541,6 @@ async function deleteDelivery(id) {
   } catch (err) { showToast(err.message, 'error'); }
 }
 
-// ✅ NEW: Dispatcher assigns to specific rider
 async function assignToRider(deliveryId) {
   const riderSelect = document.getElementById(`assignRider_${deliveryId}`);
   if (!riderSelect) return;
@@ -557,7 +556,6 @@ async function assignToRider(deliveryId) {
   } catch (err) { showToast(err.message, 'error'); }
 }
 
-// ✅ NEW: Rider accepts delivery
 async function acceptDelivery(id) {
   const riderId = document.getElementById("riderSelect").value;
   if (!riderId) { showToast('Select your identity first', 'warning'); return; }
@@ -571,7 +569,6 @@ async function acceptDelivery(id) {
   } catch (err) { showToast(err.message, 'error'); }
 }
 
-// ✅ NEW: Rider opens decline modal
 function openDeclineModal(id) {
   const riderId = document.getElementById("riderSelect").value;
   if (!riderId) { showToast('Select your identity first', 'warning'); return; }
@@ -668,10 +665,20 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
   
   // Rider actions
   if (showActions && currentUser && currentUser.role === 'rider') {
-    if (actionType === 'accept') actions = `<button class="btn-accept" onclick="acceptDelivery('${d.id}')">Accept</button>`;
-    else if (actionType === 'decline') actions = `<button class="btn-decline" onclick="openDeclineModal('${d.id}')">Decline</button>`;
-    else if (d.status === "assigned") actions = `<button onclick="confirmPickup('${d.id}')">Confirm Pickup</button>`;
-    else if (d.status === "picked_up") actions = `<button onclick="confirmDelivery('${d.id}')">Confirm Delivery</button>`;
+    const currentRiderId = document.getElementById('riderSelect').value;
+    if (d.status === 'pending_acceptance' && d.pendingRiderId === currentRiderId) {
+      // Show BOTH Accept and Decline for pending assignments
+      actions = `
+        <div style="margin-top:8px; display:flex; gap:8px;">
+          <button class="btn-accept" style="flex:1; margin:0;" onclick="acceptDelivery('${d.id}')">✅ Accept</button>
+          <button class="btn-decline" style="flex:1; margin:0;" onclick="openDeclineModal('${d.id}')">❌ Decline</button>
+        </div>
+      `;
+    } else if (d.status === "assigned") {
+      actions = `<button onclick="confirmPickup('${d.id}')">Confirm Pickup</button>`;
+    } else if (d.status === "picked_up") {
+      actions = `<button onclick="confirmDelivery('${d.id}')">Confirm Delivery</button>`;
+    }
   }
   
   // Dispatcher assign action
@@ -694,7 +701,7 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
     editDeleteBtns = `
       <div style="margin-top:8px; display:flex; gap:8px;">
         <button class="btn-receipt btn-edit" onclick="openEditModal('${d.id}')">✏️ Edit</button>
-        <button class="btn-receipt btn-delete" onclick="deleteDelivery('${d.id}')">️ Delete</button>
+        <button class="btn-receipt btn-delete" onclick="deleteDelivery('${d.id}')">🗑️ Delete</button>
       </div>
     `;
   }
