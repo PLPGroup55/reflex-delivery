@@ -2,46 +2,95 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="Real-time delivery tracking system">
 <title>Reflex - Delivery Tracking</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <script src="/socket.io/socket.io.js"></script>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 0; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { 
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif; 
+    background: #0f172a; 
+    color: #e2e8f0; 
+    margin: 0; 
+    padding: 0; 
+    touch-action: manipulation;
+  }
   
   /* Auth Styles */
-  .auth-container { max-width: 450px; margin: 80px auto; background: #1e293b; padding: 32px; border-radius: 12px; border: 1px solid #334155; }
-  .auth-container h1 { color: #38bdf8; text-align: center; margin-bottom: 8px; }
+  .auth-container { 
+    max-width: 450px; 
+    margin: 40px auto; 
+    background: #1e293b; 
+    padding: 24px; 
+    border-radius: 12px; 
+    border: 1px solid #334155; 
+  }
+  .auth-container h1 { color: #38bdf8; text-align: center; margin-bottom: 8px; font-size: 28px; }
   .auth-container .subtitle { text-align: center; color: #94a3b8; margin-bottom: 24px; }
   .form-group { margin-bottom: 16px; }
   .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px; }
-  input, button, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; font-size: 14px; }
+  input, button, select { 
+    width: 100%; 
+    padding: 12px; 
+    border-radius: 8px; 
+    border: 1px solid #475569; 
+    background: #0f172a; 
+    color: #e2e8f0; 
+    font-size: 16px; 
+  }
   input::placeholder { color: #64748b; font-style: italic; }
-  button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; transition: all 0.2s; }
+  button { 
+    background: #38bdf8; 
+    color: #0f172a; 
+    font-weight: bold; 
+    cursor: pointer; 
+    border: none; 
+    margin-top: 8px; 
+    transition: all 0.2s;
+    font-size: 16px;
+    padding: 14px;
+  }
   button:hover { background: #0ea5e9; }
+  button:active { transform: scale(0.98); }
   button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
   .btn-accept { background: #10b981; }
   .btn-accept:hover { background: #059669; }
-  .toggle-auth { text-align: center; margin-top: 16px; color: #38bdf8; cursor: pointer; font-size: 13px; }
+  .toggle-auth { text-align: center; margin-top: 16px; color: #38bdf8; cursor: pointer; font-size: 14px; }
   .toggle-auth:hover { text-decoration: underline; }
   .error-msg { color: #f87171; text-align: center; margin-bottom: 12px; }
   .success-msg { color: #4ade80; text-align: center; margin-bottom: 12px; }
 
   /* Dashboard Layouts */
-  .dashboard-container { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 16px; background: #1e293b; border-radius: 12px; border: 1px solid #334155; }
+  .dashboard-container { display: none; padding: 16px; max-width: 1200px; margin: 0 auto; }
+  .header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
+    padding: 14px; 
+    background: #1e293b; 
+    border-radius: 12px; 
+    border: 1px solid #334155; 
+    flex-wrap: wrap;
+    gap: 12px;
+  }
   .header h1 { color: #38bdf8; margin: 0; font-size: 20px; }
-  .header-controls { display: flex; align-items: center; gap: 16px; }
+  .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .role-badge { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
   .role-retailer { background: #7c3aed; color: #ddd6fe; }
   .role-dispatcher { background: #059669; color: #a7f3d0; }
   .role-rider { background: #ea580c; color: #fed7aa; }
-  .logout-btn { background: #dc2626; color: white; width: auto; padding: 8px 16px; margin: 0; }
+  .logout-btn { background: #dc2626; color: white; width: auto; padding: 8px 16px; margin: 0; font-size: 14px; }
 
-  .main-content { display: grid; gap: 20px; }
-  .retailer-grid { grid-template-columns: 1fr 1.5fr; }
-  .two-col-grid { grid-template-columns: 2fr 1fr; }
+  .main-content { display: grid; gap: 16px; }
+  .retailer-grid { grid-template-columns: 1fr; }
+  .two-col-grid { grid-template-columns: 1fr; }
   
-  .panel { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
+  .panel { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; }
   .panel h2 { margin-top: 0; font-size: 18px; color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
   .role-actions { margin-top: 12px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 12px; text-align: center; margin-bottom: 15px;}
   .role-actions.retailer { background: #2e1065; border: 1px solid #7c3aed; }
@@ -59,7 +108,57 @@
   .section-title { font-size: 14px; color: #94a3b8; margin: 20px 0 10px 0; border-bottom: 1px solid #334155; padding-bottom: 5px; }
   small { color: #64748b; }
 
-  /* Notification Popup Styles */
+  /* Install Prompt Modal */
+  .install-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+  }
+  .install-modal-overlay.show { display: flex; }
+  .install-modal {
+    background: #1e293b;
+    border: 2px solid #38bdf8;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .install-modal h2 { color: #38bdf8; margin: 0 0 12px 0; font-size: 22px; }
+  .install-modal p { color: #94a3b8; margin-bottom: 20px; line-height: 1.5; }
+  .install-modal .modal-buttons {
+    display: flex;
+    gap: 12px;
+  }
+  .install-modal .modal-buttons button {
+    flex: 1;
+    padding: 12px;
+  }
+  .btn-install { background: #10b981; }
+  .btn-install:hover { background: #059669; }
+  .btn-later { background: #475569; }
+  .btn-later:hover { background: #334155; }
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 24px;
+    cursor: pointer;
+    width: auto;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Notification Popup */
   .notification-popup {
     position: fixed; top: 20px; right: 20px; background: #1e293b; border: 2px solid #38bdf8;
     border-radius: 12px; padding: 16px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -69,10 +168,36 @@
   .notification-popup.show { transform: translateX(0); }
   .notif-header { font-weight: bold; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
   .notif-body { font-size: 13px; color: #e2e8f0; }
-  .notif-close { cursor: pointer; color: #94a3b8; font-size: 18px; }
+  .notif-close { cursor: pointer; color: #94a3b8; font-size: 18px; background: none; width: auto; padding: 0; margin: 0; }
+
+  /* Mobile Responsive */
+  @media (min-width: 768px) {
+    .retailer-grid { grid-template-columns: 1fr 1.5fr; }
+    .two-col-grid { grid-template-columns: 2fr 1fr; }
+    .auth-container { margin: 80px auto; padding: 32px; }
+  }
+
+  @media (max-width: 600px) {
+    .header { flex-direction: column; align-items: flex-start; }
+    .header-controls { width: 100%; justify-content: space-between; }
+    .notification-popup { width: calc(100% - 40px); left: 20px; right: 20px; }
+  }
 </style>
 </head>
 <body>
+
+  <!-- INSTALL PROMPT MODAL -->
+  <div id="installModalOverlay" class="install-modal-overlay">
+    <div class="install-modal">
+      <button class="modal-close" onclick="hideInstallModal()">×</button>
+      <h2>📱 Install Reflex App</h2>
+      <p>Get the best experience by installing our app on your device. Works offline and sends instant notifications!</p>
+      <div class="modal-buttons">
+        <button class="btn-install" onclick="installApp()">Install Now</button>
+        <button class="btn-later" onclick="hideInstallModal()">Maybe Later</button>
+      </div>
+    </div>
+  </div>
 
   <!-- NOTIFICATION POPUP -->
   <div id="notificationPopup" class="notification-popup">
@@ -101,7 +226,7 @@
   <!-- ================= RETAILER DASHBOARD ================= -->
   <div id="retailerDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>📦 Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
+      <div><h1> Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
       <div class="header-controls">
         <span id="retailerName" style="font-weight:bold;"></span>
         <span class="role-badge role-retailer">RETAILER</span>
@@ -184,16 +309,40 @@
   let currentToken = null;
   let currentUser = null;
   let isSignup = false;
+  let deferredPrompt = null;
 
-  // 🛡️ SESSION PERSISTENCE: Check if user is already logged in from a previous session
+  // Register Service Worker for PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('Service Worker registered'))
+      .catch(err => console.error('SW registration failed:', err));
+  }
+
+  // Listen for install prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+
+  // Check if already installed
+  window.addEventListener('appinstalled', () => {
+    console.log('PWA installed successfully');
+    localStorage.setItem('reflex_installed', 'true');
+  });
+
+  // 🛡️ SESSION PERSISTENCE: Check if user is already logged in
   const savedToken = localStorage.getItem('reflex_token');
   const savedUser = localStorage.getItem('reflex_user');
   if (savedToken && savedUser) {
     currentToken = savedToken;
     currentUser = JSON.parse(savedUser);
-    // If we have a saved session, skip the login screen entirely
     document.getElementById('authSection').style.display = 'none';
     showDashboard();
+    
+    // Show install prompt after login if not already installed
+    if (!localStorage.getItem('reflex_installed')) {
+      setTimeout(showInstallModal, 2000);
+    }
   }
 
   // Audio Context for generating a reliable beep sound
@@ -222,15 +371,14 @@
     document.getElementById('authForm').reset();
   });
 
-  // Handle form submission (both login and signup)
+  // Handle form submission
   document.getElementById('authForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); // Prevent page reload
+    e.preventDefault();
     
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const btn = document.getElementById('authBtn');
     
-    // 🛡️ LOADING STATE: Disable button and change text so user knows it's working
     const originalText = btn.textContent;
     btn.textContent = isSignup ? 'Creating Account...' : 'Logging in... (Please wait)';
     btn.disabled = true;
@@ -238,7 +386,6 @@
 
     try {
       if (isSignup) {
-        // SIGN UP FLOW
         const name = document.getElementById('name').value;
         const role = document.getElementById('role').value;
 
@@ -250,7 +397,6 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        // Automatically log them in immediately
         const loginRes = await fetch('/auth/login', { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' }, 
@@ -262,14 +408,17 @@
         currentToken = loginData.token;
         currentUser = loginData.user;
         
-        // 🛡️ SAVE TO LOCAL STORAGE so they stay logged in on refresh
         localStorage.setItem('reflex_token', currentToken);
         localStorage.setItem('reflex_user', JSON.stringify(currentUser));
         
         showDashboard();
+        
+        // Show install prompt after signup
+        if (!localStorage.getItem('reflex_installed')) {
+          setTimeout(showInstallModal, 1000);
+        }
 
       } else {
-        // LOGIN FLOW
         const res = await fetch('/auth/login', { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' }, 
@@ -281,17 +430,20 @@
         currentToken = data.token; 
         currentUser = data.user; 
         
-        // ️ SAVE TO LOCAL STORAGE
         localStorage.setItem('reflex_token', currentToken);
         localStorage.setItem('reflex_user', JSON.stringify(currentUser));
         
         showDashboard();
+        
+        // Show install prompt after login
+        if (!localStorage.getItem('reflex_installed')) {
+          setTimeout(showInstallModal, 1000);
+        }
       }
     } catch (err) { 
-      showMessage('Error: ' + err.message + ' (If server is sleeping, please wait 30s and try again)', 'error'); 
+      showMessage('Error: ' + err.message, 'error'); 
       console.error('Auth error:', err);
     } finally {
-      // 🛡️ RESTORE BUTTON
       btn.textContent = originalText;
       btn.disabled = false;
     }
@@ -306,7 +458,6 @@
   function logout() { 
     currentToken = null; 
     currentUser = null; 
-    // 🛡️ CLEAR LOCAL STORAGE
     localStorage.removeItem('reflex_token');
     localStorage.removeItem('reflex_user');
     
@@ -340,6 +491,30 @@
     refreshAll();
   }
 
+  // Install Modal Functions
+  function showInstallModal() {
+    if (deferredPrompt) {
+      document.getElementById('installModalOverlay').classList.add('show');
+    }
+  }
+
+  function hideInstallModal() {
+    document.getElementById('installModalOverlay').classList.remove('show');
+  }
+
+  async function installApp() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        localStorage.setItem('reflex_installed', 'true');
+      }
+      deferredPrompt = null;
+      hideInstallModal();
+    }
+  }
+
   async function logDelivery() {
     const name = document.getElementById("customerName").value.trim();
     const phone = document.getElementById("customerPhone").value.trim();
@@ -347,7 +522,7 @@
     const item = document.getElementById("itemDescription").value.trim();
 
     if (!name || !phone || !address || !item) {
-      alert("⚠️ Please enter all client details before logging a delivery!");
+      alert("️ Please enter all client details before logging a delivery!");
       return;
     }
 
