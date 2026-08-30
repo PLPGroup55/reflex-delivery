@@ -15,13 +15,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 const JWT_SECRET = 'reflex-prototype-secret-key-2026';
 
 const users = []; 
+
+// ✅ FIX: All riders start as available: true
 const riders = [
   { id: 'r1', name: 'John Rider', available: true },
-  { id: 'r2', name: 'Jane Rider', available: false },
+  { id: 'r2', name: 'Jane Rider', available: true }, 
   { id: 'r3', name: 'Peter Otieno', available: true },
-  { id: 'r4', name: 'Faith Nyambura', available: false },
+  { id: 'r4', name: 'Faith Nyambura', available: true },
   { id: 'r5', name: 'David Kimani', available: true }
 ];
+
 const deliveries = []; 
 let deliveryIdCounter = 1;
 let userIdCounter = 1;
@@ -92,12 +95,15 @@ app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
   const { riderId } = req.body; 
   const delivery = deliveries.find(d => d.id === id);
   const rider = riders.find(r => r.id === riderId);
+  
   if (!delivery || delivery.status !== 'unassigned') return res.status(400).json({ error: 'Delivery not available' });
   if (!rider) return res.status(400).json({ error: 'Rider not found' });
   if (!rider.available) return res.status(400).json({ error: 'Rider is busy' });
+  
   delivery.status = 'assigned';
   delivery.assignedRiderId = riderId;
-  rider.available = false;
+  rider.available = false; // Now they are truly busy
+  
   io.emit('delivery_update', { type: 'accepted', delivery, riderStatus: riders });
   res.json({ message: 'Accepted', delivery });
 });
@@ -119,11 +125,12 @@ app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
   const delivery = deliveries.find(d => d.id === id);
   if (!delivery || delivery.status !== 'picked_up') return res.status(400).json({ error: 'Must be picked up first' });
   if (delivery.deliveryCode !== confirmationCode) return res.status(400).json({ error: 'Invalid delivery code' });
+  
   delivery.status = 'delivered';
   if (delivery.assignedRiderId) {
     const rider = riders.find(r => r.id === delivery.assignedRiderId);
     if (rider) {
-      rider.available = true;
+      rider.available = true; // Free them up
       io.emit('rider_available', { riderId: rider.id, riderName: rider.name });
     }
   }
