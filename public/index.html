@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
 <meta name="description" content="Real-time delivery tracking system">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Reflex - Delivery Tracking</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
@@ -12,48 +15,47 @@
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { 
-    font-family: -apple-system, Segoe UI, Roboto, sans-serif; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
     background: #0f172a; 
     color: #e2e8f0; 
     margin: 0; 
     padding: 0; 
     touch-action: manipulation;
+    overflow-x: hidden;
   }
   
-  /* Auth Styles */
-  .auth-container { 
-    max-width: 450px; 
-    margin: 40px auto; 
-    background: #1e293b; 
-    padding: 24px; 
-    border-radius: 12px; 
-    border: 1px solid #334155; 
+  /*  SPLASH SCREEN */
+  #splashScreen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #0f172a; z-index: 99999;
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+    transition: opacity 0.6s ease;
   }
+  .splash-logo { 
+    font-size: 48px; color: #38bdf8; margin-bottom: 20px; 
+    animation: pulse 1.5s infinite ease-in-out; 
+    font-weight: bold; letter-spacing: 2px;
+  }
+  .splash-spinner { 
+    width: 40px; height: 40px; 
+    border: 4px solid #334155; border-top: 4px solid #38bdf8; 
+    border-radius: 50%; animation: spin 1s linear infinite; 
+    margin-bottom: 20px; 
+  }
+  .splash-text { color: #94a3b8; font-size: 14px; letter-spacing: 1px; }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* Auth Styles */
+  .auth-container { max-width: 450px; margin: 40px auto; background: #1e293b; padding: 24px; border-radius: 12px; border: 1px solid #334155; }
   .auth-container h1 { color: #38bdf8; text-align: center; margin-bottom: 8px; font-size: 28px; }
   .auth-container .subtitle { text-align: center; color: #94a3b8; margin-bottom: 24px; }
-  .form-group { margin-bottom: 16px; }
+  .form-group { margin-bottom: 16px; position: relative; }
   .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 13px; }
-  input, button, select { 
-    width: 100%; 
-    padding: 12px; 
-    border-radius: 8px; 
-    border: 1px solid #475569; 
-    background: #0f172a; 
-    color: #e2e8f0; 
-    font-size: 16px; 
-  }
+  input, button, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #e2e8f0; font-size: 16px; }
   input::placeholder { color: #64748b; font-style: italic; }
-  button { 
-    background: #38bdf8; 
-    color: #0f172a; 
-    font-weight: bold; 
-    cursor: pointer; 
-    border: none; 
-    margin-top: 8px; 
-    transition: all 0.2s;
-    font-size: 16px;
-    padding: 14px;
-  }
+  input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1); }
+  button { background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; border: none; margin-top: 8px; transition: all 0.2s; font-size: 16px; padding: 14px; }
   button:hover { background: #0ea5e9; }
   button:active { transform: scale(0.98); }
   button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
@@ -61,25 +63,22 @@
   .btn-accept:hover { background: #059669; }
   .toggle-auth { text-align: center; margin-top: 16px; color: #38bdf8; cursor: pointer; font-size: 14px; }
   .toggle-auth:hover { text-decoration: underline; }
-  .error-msg { color: #f87171; text-align: center; margin-bottom: 12px; }
-  .success-msg { color: #4ade80; text-align: center; margin-bottom: 12px; }
+  
+  .password-wrapper { position: relative; }
+  .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px 8px; font-size: 14px; width: auto; margin: 0; }
+  .password-toggle:hover { color: #38bdf8; }
+  
+  .auth-options { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 13px; }
+  .remember-me { display: flex; align-items: center; gap: 6px; color: #94a3b8; cursor: pointer; }
+  .remember-me input { width: auto; margin: 0; }
+  .forgot-password { color: #38bdf8; cursor: pointer; background: none; border: none; padding: 0; margin: 0; width: auto; font-size: 13px; }
 
   /* Dashboard Layouts */
-  .dashboard-container { display: none; padding: 16px; max-width: 1200px; margin: 0 auto; }
-  .header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 20px; 
-    padding: 14px; 
-    background: #1e293b; 
-    border-radius: 12px; 
-    border: 1px solid #334155; 
-    flex-wrap: wrap;
-    gap: 12px;
-  }
+  .dashboard-container { display: none; padding: 16px; max-width: 1200px; margin: 0 auto; padding-bottom: 80px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 14px; background: #1e293b; border-radius: 12px; border: 1px solid #334155; flex-wrap: wrap; gap: 12px; position: sticky; top: 10px; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
   .header h1 { color: #38bdf8; margin: 0; font-size: 20px; }
   .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: white; flex-shrink: 0; }
   .role-badge { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
   .role-retailer { background: #7c3aed; color: #ddd6fe; }
   .role-dispatcher { background: #059669; color: #a7f3d0; }
@@ -97,80 +96,65 @@
   .role-actions.dispatcher { background: #064e3b; border: 1px solid #059669; }
   .role-actions.rider { background: #7c2d12; border: 1px solid #ea580c; }
 
-  .delivery-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
+  .delivery-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13px; transition: all 0.2s; }
+  .delivery-card:hover { border-color: #38bdf8; transform: translateY(-2px); }
   .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-left: 8px;}
   .status-unassigned { background: #7f1d1d; color: #fecaca; }
   .status-assigned { background: #78350f; color: #fed7aa; }
   .status-picked_up { background: #1e3a5f; color: #93c5fd; }
   .status-delivered { background: #14532d; color: #86efac; }
   .code-box { background: #1e3a5f; border: 2px dashed #38bdf8; padding: 4px 8px; border-radius: 6px; font-weight: bold; color: #38bdf8; font-family: monospace;}
+  .delivery-time { color: #64748b; font-size: 11px; margin-top: 4px; }
   
   .section-title { font-size: 14px; color: #94a3b8; margin: 20px 0 10px 0; border-bottom: 1px solid #334155; padding-bottom: 5px; }
   small { color: #64748b; }
 
-  /* Install Prompt Modal */
-  .install-modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.8);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-    padding: 20px;
-  }
+  .search-bar { margin-bottom: 16px; position: relative; }
+  .search-bar input { padding-left: 36px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: #64748b; }
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+
+  .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+  .toast { background: #1e293b; border-left: 4px solid #38bdf8; border-radius: 8px; padding: 12px 16px; min-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 12px; pointer-events: auto; }
+  .toast.success { border-left-color: #10b981; }
+  .toast.error { border-left-color: #ef4444; }
+  .toast.warning { border-left-color: #f59e0b; }
+  @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ffffff; border-radius: 50%; border-top-color: transparent; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+
+  .install-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 10000; padding: 20px; }
   .install-modal-overlay.show { display: flex; }
-  .install-modal {
-    background: #1e293b;
-    border: 2px solid #38bdf8;
-    border-radius: 16px;
-    padding: 24px;
-    max-width: 400px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
+  .install-modal { background: #1e293b; border: 2px solid #38bdf8; border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); position: relative; }
   .install-modal h2 { color: #38bdf8; margin: 0 0 12px 0; font-size: 22px; }
   .install-modal p { color: #94a3b8; margin-bottom: 20px; line-height: 1.5; }
-  .install-modal .modal-buttons {
-    display: flex;
-    gap: 12px;
-  }
-  .install-modal .modal-buttons button {
-    flex: 1;
-    padding: 12px;
-  }
+  .install-modal .modal-buttons { display: flex; gap: 12px; }
+  .install-modal .modal-buttons button { flex: 1; padding: 12px; }
   .btn-install { background: #10b981; }
-  .btn-install:hover { background: #059669; }
   .btn-later { background: #475569; }
-  .btn-later:hover { background: #334155; }
-  .modal-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 24px;
-    cursor: pointer;
-    width: auto;
-    padding: 0;
-    margin: 0;
-  }
+  .modal-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; width: auto; padding: 0; margin: 0; }
 
-  /* Notification Popup */
-  .notification-popup {
-    position: fixed; top: 20px; right: 20px; background: #1e293b; border: 2px solid #38bdf8;
-    border-radius: 12px; padding: 16px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    transform: translateX(400px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
-  }
+  .notification-popup { position: fixed; top: 20px; right: 20px; background: #1e293b; border: 2px solid #38bdf8; border-radius: 12px; padding: 16px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transform: translateX(400px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
   .notification-popup.show { transform: translateX(0); }
   .notif-header { font-weight: bold; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
   .notif-body { font-size: 13px; color: #e2e8f0; }
   .notif-close { cursor: pointer; color: #94a3b8; font-size: 18px; background: none; width: auto; padding: 0; margin: 0; }
 
-  /* Mobile Responsive */
+  .confirm-dialog-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 10002; padding: 20px; }
+  .confirm-dialog-overlay.show { display: flex; }
+  .confirm-dialog { background: #1e293b; border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; text-align: center; }
+  .confirm-dialog h3 { color: #f87171; margin: 0 0 12px 0; }
+  .confirm-dialog p { color: #94a3b8; margin-bottom: 20px; }
+  .confirm-dialog .dialog-buttons { display: flex; gap: 12px; }
+  .confirm-dialog .dialog-buttons button { flex: 1; }
+  .btn-confirm { background: #dc2626; }
+  .btn-cancel { background: #475569; }
+
+  /* iOS Hint */
+  .ios-install-hint { display: none; background: #1e3a5f; border: 1px solid #38bdf8; padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 13px; color: #93c5fd; text-align: center; }
+
   @media (min-width: 768px) {
     .retailer-grid { grid-template-columns: 1fr 1.5fr; }
     .two-col-grid { grid-template-columns: 2fr 1fr; }
@@ -181,10 +165,33 @@
     .header { flex-direction: column; align-items: flex-start; }
     .header-controls { width: 100%; justify-content: space-between; }
     .notification-popup { width: calc(100% - 40px); left: 20px; right: 20px; }
+    .toast { min-width: auto; width: calc(100% - 40px); }
   }
 </style>
 </head>
 <body>
+
+  <!-- 🚀 SPLASH SCREEN -->
+  <div id="splashScreen">
+    <div class="splash-logo">🚀 Reflex</div>
+    <div class="splash-spinner"></div>
+    <div class="splash-text">LOADING YOUR DASHBOARD...</div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- CONFIRMATION DIALOG -->
+  <div id="confirmDialogOverlay" class="confirm-dialog-overlay">
+    <div class="confirm-dialog">
+      <h3>⚠️ Confirm Action</h3>
+      <p id="confirmMessage">Are you sure?</p>
+      <div class="dialog-buttons">
+        <button class="btn-cancel" onclick="hideConfirmDialog()">Cancel</button>
+        <button class="btn-confirm" id="confirmBtn" onclick="executeConfirmedAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
 
   <!-- INSTALL PROMPT MODAL -->
   <div id="installModalOverlay" class="install-modal-overlay">
@@ -195,6 +202,9 @@
       <div class="modal-buttons">
         <button class="btn-install" onclick="installApp()">Install Now</button>
         <button class="btn-later" onclick="hideInstallModal()">Maybe Later</button>
+      </div>
+      <div class="ios-install-hint" id="iosHint">
+        On iPhone: Tap the <strong>Share</strong> button 📤 and select <strong>"Add to Home Screen"</strong>
       </div>
     </div>
   </div>
@@ -209,15 +219,43 @@
   </div>
 
   <!-- AUTH SECTION -->
-  <div id="authSection" class="auth-container">
+  <div id="authSection" class="auth-container" style="display:none;">
     <h1>🚀 Reflex</h1>
     <p class="subtitle">Delivery Tracking System</p>
     <div id="authMessage"></div>
     <form id="authForm">
-      <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe" required></div>
-      <div class="form-group"><label>Email</label><input type="email" id="email" placeholder="you@example.com" required></div>
-      <div class="form-group"><label>Password</label><input type="password" id="password" placeholder="Enter password" required></div>
-      <div class="form-group" id="roleGroup" style="display:none;"><label>Role</label><select id="role"><option value="retailer">Retailer Staff</option><option value="dispatcher">Dispatcher</option><option value="rider">Rider</option></select></div>
+      <div class="form-group" id="nameGroup" style="display:none;">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="John Doe" required>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" placeholder="Enter password" required>
+          <button type="button" class="password-toggle" onclick="togglePassword()">👁️ Show</button>
+        </div>
+      </div>
+      <div class="form-group" id="roleGroup" style="display:none;">
+        <label>Role</label>
+        <select id="role">
+          <option value="retailer">Retailer Staff</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="rider">Rider</option>
+        </select>
+      </div>
+      
+      <div id="loginOptions" class="auth-options" style="display:none;">
+        <label class="remember-me">
+          <input type="checkbox" id="rememberMe">
+          <span>Remember me</span>
+        </label>
+        <button type="button" class="forgot-password" onclick="showToast('Password reset link sent!', 'success')">Forgot Password?</button>
+      </div>
+      
       <button type="submit" id="authBtn">Login</button>
     </form>
     <div class="toggle-auth" id="toggleAuth">Don't have an account? Sign up</div>
@@ -226,11 +264,17 @@
   <!-- ================= RETAILER DASHBOARD ================= -->
   <div id="retailerDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1> Retailer Dashboard</h1><small style="color:#94a3b8;">Log and track your deliveries</small></div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="user-avatar" id="retailerAvatar">R</div>
+        <div>
+          <h1 style="margin:0;">Retailer Dashboard</h1>
+          <small style="color:#94a3b8;">Log and track your deliveries</small>
+        </div>
+      </div>
       <div class="header-controls">
         <span id="retailerName" style="font-weight:bold;"></span>
         <span class="role-badge role-retailer">RETAILER</span>
-        <button class="logout-btn" onclick="logout()">Logout</button>
+        <button class="logout-btn" onclick="confirmLogout()">Logout</button>
       </div>
     </div>
     <div class="main-content retailer-grid">
@@ -245,6 +289,10 @@
       </div>
       <div class="panel">
         <h2>All Deliveries</h2>
+        <div class="search-bar">
+          <span class="search-icon"></span>
+          <input type="text" id="retailerSearch" placeholder="Search deliveries..." oninput="filterDeliveries()">
+        </div>
         <div id="retailerDeliveries"></div>
       </div>
     </div>
@@ -253,16 +301,26 @@
   <!-- ================= DISPATCHER DASHBOARD ================= -->
   <div id="dispatcherDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>🗺️ Dispatcher Dashboard</h1><small style="color:#94a3b8;">Monitor operations and rider status</small></div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="user-avatar" id="dispatcherAvatar">D</div>
+        <div>
+          <h1 style="margin:0;">Dispatcher Dashboard</h1>
+          <small style="color:#94a3b8;">Monitor operations and rider status</small>
+        </div>
+      </div>
       <div class="header-controls">
         <span id="dispatcherName" style="font-weight:bold;"></span>
         <span class="role-badge role-dispatcher">DISPATCHER</span>
-        <button class="logout-btn" onclick="logout()">Logout</button>
+        <button class="logout-btn" onclick="confirmLogout()">Logout</button>
       </div>
     </div>
     <div class="main-content two-col-grid">
       <div class="panel">
         <h2>All Active Deliveries</h2>
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="dispatcherSearch" placeholder="Search deliveries..." oninput="filterDeliveries()">
+        </div>
         <div id="dispatcherDeliveries"></div>
       </div>
       <div class="panel">
@@ -275,11 +333,17 @@
   <!-- ================= RIDER DASHBOARD ================= -->
   <div id="riderDashboard" class="dashboard-container">
     <div class="header">
-      <div><h1>🏍️ Rider Dashboard</h1><small style="color:#94a3b8;">Accept jobs and manage deliveries</small></div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="user-avatar" id="riderAvatar">R</div>
+        <div>
+          <h1 style="margin:0;">Rider Dashboard</h1>
+          <small style="color:#94a3b8;">Accept jobs and manage deliveries</small>
+        </div>
+      </div>
       <div class="header-controls">
         <span id="riderName" style="font-weight:bold;"></span>
         <span class="role-badge role-rider">RIDER</span>
-        <button class="logout-btn" onclick="logout()">Logout</button>
+        <button class="logout-btn" onclick="confirmLogout()">Logout</button>
       </div>
     </div>
     <div class="main-content two-col-grid">
@@ -310,42 +374,57 @@
   let currentUser = null;
   let isSignup = false;
   let deferredPrompt = null;
+  let allDeliveries = [];
+  let pendingAction = null;
 
-  // Register Service Worker for PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then(() => console.log('Service Worker registered'))
       .catch(err => console.error('SW registration failed:', err));
   }
 
-  // Listen for install prompt
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    // Show iOS hint if it's an iPhone (Safari doesn't support beforeinstallprompt)
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+      document.getElementById('iosHint').style.display = 'block';
+    }
   });
 
-  // Check if already installed
   window.addEventListener('appinstalled', () => {
-    console.log('PWA installed successfully');
     localStorage.setItem('reflex_installed', 'true');
+    showToast('App installed successfully!', 'success');
   });
 
-  // 🛡️ SESSION PERSISTENCE: Check if user is already logged in
+  // Session Persistence
   const savedToken = localStorage.getItem('reflex_token');
   const savedUser = localStorage.getItem('reflex_user');
+  
+  // 🚀 HIDE SPLASH SCREEN AFTER LOAD
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const splash = document.getElementById('splashScreen');
+      splash.style.opacity = '0';
+      setTimeout(() => {
+        splash.style.display = 'none';
+        // Show auth screen if not logged in
+        if (!savedToken) {
+          document.getElementById('authSection').style.display = 'block';
+        }
+      }, 600);
+    }, 1500); // Show splash for 1.5 seconds
+  });
+
   if (savedToken && savedUser) {
     currentToken = savedToken;
     currentUser = JSON.parse(savedUser);
-    document.getElementById('authSection').style.display = 'none';
     showDashboard();
-    
-    // Show install prompt after login if not already installed
     if (!localStorage.getItem('reflex_installed')) {
       setTimeout(showInstallModal, 2000);
     }
   }
 
-  // Audio Context for generating a reliable beep sound
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   function playBeep() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -360,118 +439,126 @@
     setTimeout(() => oscillator.stop(), 200);
   }
 
-  // Toggle between Login and Signup forms
+  function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleBtn = document.querySelector('.password-toggle');
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      toggleBtn.textContent = '🙈 Hide';
+    } else {
+      passwordInput.type = 'password';
+      toggleBtn.textContent = '️ Show';
+    }
+  }
+
   document.getElementById('toggleAuth').addEventListener('click', () => {
     isSignup = !isSignup;
     document.getElementById('authBtn').textContent = isSignup ? 'Sign Up' : 'Login';
     document.getElementById('toggleAuth').textContent = isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up";
     document.getElementById('nameGroup').style.display = isSignup ? 'block' : 'none';
     document.getElementById('roleGroup').style.display = isSignup ? 'block' : 'none';
+    document.getElementById('loginOptions').style.display = isSignup ? 'none' : 'flex';
     document.getElementById('authMessage').textContent = '';
     document.getElementById('authForm').reset();
   });
 
-  // Handle form submission
   document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const btn = document.getElementById('authBtn');
     
     const originalText = btn.textContent;
-    btn.textContent = isSignup ? 'Creating Account...' : 'Logging in... (Please wait)';
+    btn.innerHTML = '<span class="spinner"></span>' + (isSignup ? 'Creating Account...' : 'Logging in...');
     btn.disabled = true;
-    document.getElementById('authMessage').textContent = '';
 
     try {
       if (isSignup) {
         const name = document.getElementById('name').value;
         const role = document.getElementById('role').value;
 
-        const res = await fetch('/auth/signup', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ name, email, password, role }) 
-        });
+        const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        const loginRes = await fetch('/auth/login', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ email, password }) 
-        });
+        const loginRes = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const loginData = await loginRes.json();
         if (!loginRes.ok) throw new Error(loginData.error);
 
         currentToken = loginData.token;
         currentUser = loginData.user;
-        
         localStorage.setItem('reflex_token', currentToken);
         localStorage.setItem('reflex_user', JSON.stringify(currentUser));
-        
+        showToast('Account created successfully!', 'success');
         showDashboard();
-        
-        // Show install prompt after signup
-        if (!localStorage.getItem('reflex_installed')) {
-          setTimeout(showInstallModal, 1000);
-        }
+        if (!localStorage.getItem('reflex_installed')) setTimeout(showInstallModal, 1000);
 
       } else {
-        const res = await fetch('/auth/login', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ email, password }) 
-        });
+        const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        
+        // 🛡️ SPECIFIC ERROR HANDLING
+        if (!res.ok) {
+          if (data.error && data.error.includes('Account does not exist')) {
+            throw new Error('ACCOUNT_NOT_FOUND');
+          }
+          throw new Error(data.error);
+        }
         
         currentToken = data.token; 
         currentUser = data.user; 
-        
         localStorage.setItem('reflex_token', currentToken);
         localStorage.setItem('reflex_user', JSON.stringify(currentUser));
-        
+        showToast(`Welcome back, ${currentUser.name}!`, 'success');
         showDashboard();
-        
-        // Show install prompt after login
-        if (!localStorage.getItem('reflex_installed')) {
-          setTimeout(showInstallModal, 1000);
-        }
+        if (!localStorage.getItem('reflex_installed')) setTimeout(showInstallModal, 1000);
       }
     } catch (err) { 
-      showMessage('Error: ' + err.message, 'error'); 
-      console.error('Auth error:', err);
+      if (err.message === 'ACCOUNT_NOT_FOUND') {
+        showToast('Account does not exist. Please sign up first.', 'error');
+      } else {
+        showToast('Error: ' + err.message, 'error'); 
+      }
     } finally {
       btn.textContent = originalText;
       btn.disabled = false;
     }
   });
 
-  function showMessage(msg, type) { 
-    const el = document.getElementById('authMessage'); 
-    el.textContent = msg; 
-    el.className = type + '-msg'; 
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(400px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
   }
+
+  function showConfirmDialog(message, action) {
+    document.getElementById('confirmMessage').textContent = message;
+    pendingAction = action;
+    document.getElementById('confirmDialogOverlay').classList.add('show');
+  }
+  function hideConfirmDialog() { document.getElementById('confirmDialogOverlay').classList.remove('show'); pendingAction = null; }
+  function executeConfirmedAction() { if (pendingAction) pendingAction(); hideConfirmDialog(); }
+  function confirmLogout() { showConfirmDialog('Are you sure you want to logout?', logout); }
   
   function logout() { 
-    currentToken = null; 
-    currentUser = null; 
+    currentToken = null; currentUser = null; 
     localStorage.removeItem('reflex_token');
     localStorage.removeItem('reflex_user');
-    
     document.querySelectorAll('.dashboard-container').forEach(d => d.style.display = 'none');
     document.getElementById('authSection').style.display = 'block'; 
-    document.getElementById('authForm').reset(); 
+    document.getElementById('authForm').reset();
+    showToast('Logged out successfully', 'info');
   }
   
-  function getAuthHeaders() { 
-    return { 
-      'Content-Type': 'application/json', 
-      'Authorization': `Bearer ${currentToken}` 
-    }; 
-  }
+  function getAuthHeaders() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }; }
 
   function showDashboard() {
     document.getElementById('authSection').style.display = 'none';
@@ -480,37 +567,35 @@
     if (currentUser.role === 'retailer') {
       document.getElementById('retailerDashboard').style.display = 'block';
       document.getElementById('retailerName').textContent = currentUser.name;
+      document.getElementById('retailerAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
     } else if (currentUser.role === 'dispatcher') {
       document.getElementById('dispatcherDashboard').style.display = 'block';
       document.getElementById('dispatcherName').textContent = currentUser.name;
+      document.getElementById('dispatcherAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
     } else if (currentUser.role === 'rider') {
       document.getElementById('riderDashboard').style.display = 'block';
       document.getElementById('riderName').textContent = currentUser.name;
+      document.getElementById('riderAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
     }
-    
     refreshAll();
   }
 
-  // Install Modal Functions
   function showInstallModal() {
-    if (deferredPrompt) {
-      document.getElementById('installModalOverlay').classList.add('show');
-    }
+    document.getElementById('installModalOverlay').classList.add('show');
   }
-
-  function hideInstallModal() {
-    document.getElementById('installModalOverlay').classList.remove('show');
-  }
-
+  function hideInstallModal() { document.getElementById('installModalOverlay').classList.remove('show'); }
   async function installApp() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
         localStorage.setItem('reflex_installed', 'true');
+        showToast('App installed! Check your home screen', 'success');
       }
       deferredPrompt = null;
+      hideInstallModal();
+    } else {
+      showToast('Use your browser menu to "Add to Home Screen"', 'info');
       hideInstallModal();
     }
   }
@@ -520,32 +605,21 @@
     const phone = document.getElementById("customerPhone").value.trim();
     const address = document.getElementById("address").value.trim();
     const item = document.getElementById("itemDescription").value.trim();
-
-    if (!name || !phone || !address || !item) {
-      alert("️ Please enter all client details before logging a delivery!");
-      return;
-    }
-
+    if (!name || !phone || !address || !item) { showToast('Please fill in all fields', 'warning'); return; }
     const body = { customerName: name, customerPhone: phone, address: address, itemDescription: item };
     const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const delivery = await res.json();
-    
-    document.getElementById("customerName").value = "";
-    document.getElementById("customerPhone").value = "";
-    document.getElementById("address").value = "";
-    document.getElementById("itemDescription").value = "";
-
-    alert(`Delivery #${delivery.id} logged successfully! Riders have been notified.`);
+    document.getElementById("customerName").value = ""; document.getElementById("customerPhone").value = ""; document.getElementById("address").value = ""; document.getElementById("itemDescription").value = "";
+    showToast(`Delivery #${delivery.id} logged successfully!`, 'success');
     refreshAll();
   }
 
   async function acceptDelivery(id) {
     const riderId = document.getElementById("riderSelect").value;
-    if (!riderId) { alert('Please select your rider identity from the dropdown first!'); return; }
+    if (!riderId) { showToast('Please select your rider identity first', 'warning'); return; }
     const res = await fetch(`/deliveries/${id}/accept`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId }) });
     const result = await res.json();
-    if (result.error) alert(result.error); 
-    else alert(`Delivery #${id} accepted!`);
+    if (result.error) showToast(result.error, 'error'); else showToast(`Delivery #${id} accepted!`, 'success');
     refreshAll();
   }
 
@@ -553,8 +627,7 @@
     const code = prompt("Enter PICKUP code:"); if (!code) return;
     const res = await fetch(`/deliveries/${id}/pickup`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ pickupCode: code }) });
     const result = await res.json();
-    if (result.error) alert(result.error); 
-    else alert(`Pickup confirmed!`);
+    if (result.error) showToast(result.error, 'error'); else showToast('Pickup confirmed!', 'success');
     refreshAll();
   }
 
@@ -562,8 +635,7 @@
     const code = prompt("Enter DELIVERY code:"); if (!code) return;
     const res = await fetch(`/deliveries/${id}/confirm`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ confirmationCode: code }) });
     const result = await res.json();
-    if (result.error) alert(result.error); 
-    else alert(`Delivery completed!`);
+    if (result.error) showToast(result.error, 'error'); else showToast('Delivery completed!', 'success');
     refreshAll();
   }
 
@@ -574,9 +646,16 @@
     playBeep();
     setTimeout(() => { popup.classList.remove('show'); }, 5000);
   }
+  function hideNotification() { document.getElementById('notificationPopup').classList.remove('show'); }
 
-  function hideNotification() {
-    document.getElementById('notificationPopup').classList.remove('show');
+  function filterDeliveries() {
+    const searchTerm = (document.getElementById('retailerSearch')?.value || document.getElementById('dispatcherSearch')?.value || '').toLowerCase();
+    const filtered = allDeliveries.filter(d => d.customerName.toLowerCase().includes(searchTerm) || d.address.toLowerCase().includes(searchTerm) || d.itemDescription.toLowerCase().includes(searchTerm) || d.id.toLowerCase().includes(searchTerm));
+    if (currentUser.role === 'retailer') {
+      document.getElementById("retailerDeliveries").innerHTML = filtered.length ? filtered.map(d => renderDeliveryCard(d, false)).join("") : '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No deliveries found</p></div>';
+    } else if (currentUser.role === 'dispatcher') {
+      document.getElementById("dispatcherDeliveries").innerHTML = filtered.length ? filtered.map(d => renderDeliveryCard(d, false)).join("") : '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No deliveries found</p></div>';
+    }
   }
 
   function renderDeliveryCard(d, showActions, actionType) {
@@ -589,37 +668,31 @@
     let codes = "";
     if (d.status === "assigned") codes = `<br><small style="margin-top:5px; display:block;">Pickup Code: <span class="code-box">${d.pickupCode}</span></small>`;
     else if (d.status === "picked_up") codes = `<br><small style="margin-top:5px; display:block;">Delivery Code: <span class="code-box">${d.deliveryCode}</span></small>`;
-    
-    return `<div class="delivery-card"><strong>#${d.id} - ${d.customerName}</strong> <span class="status status-${d.status}">${d.status.replace("_", " ")}</span><br><small>${d.address} — ${d.itemDescription}</small>${codes}${actions}</div>`;
+    const time = d.createdAt ? new Date(d.createdAt).toLocaleString() : 'Just now';
+    return `<div class="delivery-card"><strong>#${d.id} - ${d.customerName}</strong> <span class="status status-${d.status}">${d.status.replace("_", " ")}</span><br><small>${d.address} — ${d.itemDescription}</small><div class="delivery-time">🕒 ${time}</div>${codes}${actions}</div>`;
   }
 
   async function refreshAll() {
     const deliveries = await (await fetch("/deliveries", { headers: getAuthHeaders() })).json();
     const riders = await (await fetch("/riders", { headers: getAuthHeaders() })).json();
+    allDeliveries = deliveries;
 
     if (currentUser.role === 'retailer') {
-      document.getElementById("retailerDeliveries").innerHTML = deliveries.map(d => renderDeliveryCard(d, false)).join("") || "<small>No deliveries yet.</small>";
+      document.getElementById("retailerDeliveries").innerHTML = deliveries.length ? deliveries.map(d => renderDeliveryCard(d, false)).join("") : '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No deliveries yet. Create your first delivery!</p></div>';
     }
-    
     if (currentUser.role === 'dispatcher') {
-      document.getElementById("dispatcherDeliveries").innerHTML = deliveries.map(d => renderDeliveryCard(d, false)).join("") || "<small>No deliveries yet.</small>";
-      document.getElementById("riderList").innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? "✅ Available" : "🚴 On delivery"}</div>`).join("");
+      document.getElementById("dispatcherDeliveries").innerHTML = deliveries.length ? deliveries.map(d => renderDeliveryCard(d, false)).join("") : '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No deliveries yet</p></div>';
+      document.getElementById("riderList").innerHTML = riders.length ? riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? "✅ Available" : " On delivery"}</div>`).join("") : '<div class="empty-state"><div class="empty-state-icon">🏍️</div><p>No riders available</p></div>';
     }
-
     if (currentUser.role === 'rider') {
       const openRequests = deliveries.filter(d => d.status === 'unassigned');
-      document.getElementById("riderOpenRequests").innerHTML = openRequests.length 
-        ? openRequests.map(d => renderDeliveryCard(d, true, 'accept')).join("") 
-        : "<small>No open requests right now.</small>";
-
+      document.getElementById("riderOpenRequests").innerHTML = openRequests.length ? openRequests.map(d => renderDeliveryCard(d, true, 'accept')).join("") : '<div class="empty-state"><div class="empty-state-icon">📢</div><p>No open requests right now</p></div>';
       const riderId = document.getElementById("riderSelect").value;
       if (riderId) {
         const myJobs = deliveries.filter(d => d.assignedRiderId === riderId && d.status !== 'delivered');
-        document.getElementById("riderActiveJobs").innerHTML = myJobs.length 
-          ? myJobs.map(d => renderDeliveryCard(d, true, 'action')).join("") 
-          : "<small>No active jobs for this rider.</small>";
+        document.getElementById("riderActiveJobs").innerHTML = myJobs.length ? myJobs.map(d => renderDeliveryCard(d, true, 'action')).join("") : '<div class="empty-state"><div class="empty-state-icon">🏍️</div><p>No active jobs for this rider</p></div>';
       } else {
-        document.getElementById("riderActiveJobs").innerHTML = "<small>Select your identity above to see jobs.</small>";
+        document.getElementById("riderActiveJobs").innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Select your identity above to see jobs</p></div>';
       }
     }
   }
@@ -629,6 +702,7 @@
     if (data.type === 'created' && currentUser && (currentUser.role === 'rider' || currentUser.role === 'dispatcher')) {
       const d = data.delivery;
       showNotification(`New Order: ${d.customerName}`, `${d.itemDescription} to ${d.address}`);
+      showToast(`New delivery request from ${d.customerName}`, 'info');
     }
   });
 </script>
