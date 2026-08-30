@@ -119,14 +119,14 @@
 <div id="receiptOverlay" class="receipt-overlay">
   <div class="receipt-modal">
     <button class="modal-close" onclick="hideReceipt()">×</button>
-    <h2> DELIVERY RECEIPT</h2>
+    <h2>🧾 DELIVERY RECEIPT</h2>
     <div id="receiptContent"></div>
-    <button class="btn-print" onclick="window.print()">️ Print Receipt</button>
+    <button class="btn-print" onclick="window.print()">🖨️ Print Receipt</button>
   </div>
 </div>
 
 <div id="authSection" class="auth-container" style="display:none;">
-  <h1>🚀 Reflex</h1>
+  <h1> Reflex</h1>
   <p class="subtitle">Delivery Tracking System</p>
   <form id="authForm">
     <div class="form-group" id="nameGroup" style="display:none;"><label>Full Name</label><input type="text" id="name" placeholder="John Doe" required></div>
@@ -135,7 +135,15 @@
       <label>Password</label>
       <div class="password-wrapper">
         <input type="password" id="password" placeholder="Enter password" required>
-        <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
+        <button type="button" class="password-toggle" onclick="togglePassword('password', this)">👁️</button>
+      </div>
+    </div>
+    <!-- NEW: Confirm Password Field -->
+    <div class="form-group" id="confirmPasswordGroup" style="display:none;">
+      <label>Confirm Password</label>
+      <div class="password-wrapper">
+        <input type="password" id="confirmPassword" placeholder="Re-enter password" required>
+        <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword', this)">👁️</button>
       </div>
     </div>
     <div class="form-group" id="roleGroup" style="display:none;"><label>Role</label><select id="role"><option value="retailer">Retailer</option><option value="dispatcher">Dispatcher</option><option value="rider">Rider</option></select></div>
@@ -219,12 +227,10 @@
   <div class="main-content two-col-grid">
     <div class="panel">
       <h2>My Jobs</h2>
-      <!-- Highlighted box for active job -->
       <div id="currentActiveJobBox" style="display:none; margin-bottom: 20px;">
-        <h3 style="color:#38bdf8; margin-bottom:10px;">🚴 CURRENT DELIVERY</h3>
+        <h3 style="color:#38bdf8; margin-bottom:10px;"> CURRENT DELIVERY</h3>
         <div id="currentActiveJobContent"></div>
       </div>
-      
       <select id="riderSelect" onchange="loadRiderView()">
         <option value="">-- Select Your Identity --</option>
         <option value="r1">John Rider (r1)</option>
@@ -237,7 +243,7 @@
       <div id="riderActiveJobs"></div>
     </div>
     <div class="panel">
-      <h2>📢 Open Requests</h2>
+      <h2> Open Requests</h2>
       <div id="riderOpenRequests"></div>
     </div>
   </div>
@@ -258,15 +264,10 @@ window.addEventListener('load', () => {
       if (savedToken && savedUser) {
         currentToken = savedToken;
         currentUser = JSON.parse(savedUser);
-        
-        // Restore rider selection if it exists
         if (currentUser.role === 'rider') {
           const savedRiderId = localStorage.getItem('my_rider_id');
-          if (savedRiderId) {
-            document.getElementById('riderSelect').value = savedRiderId;
-          }
+          if (savedRiderId) document.getElementById('riderSelect').value = savedRiderId;
         }
-        
         showDashboard();
       } else {
         document.getElementById('authSection').style.display = 'block';
@@ -277,25 +278,14 @@ window.addEventListener('load', () => {
 
 socket.on('rider_status_update', (updatedRiders) => {
   riders = updatedRiders;
-  if (currentUser && currentUser.role === 'dispatcher') {
-    updateRiderList();
-  }
+  if (currentUser && currentUser.role === 'dispatcher') updateRiderList();
 });
+socket.on('rider_available', (data) => showToast(`${data.riderName} is now available!`, 'success'));
 
-socket.on('rider_available', (data) => {
-  showToast(`${data.riderName} is now available!`, 'success');
-});
-
-function togglePassword() {
-  const p = document.getElementById('password');
-  const btn = document.querySelector('.password-toggle');
-  if (p.type === 'password') { 
-    p.type = 'text'; 
-    btn.textContent = ''; 
-  } else { 
-    p.type = 'password'; 
-    btn.textContent = '👁️'; 
-  }
+function togglePassword(fieldId, btn) {
+  const p = document.getElementById(fieldId);
+  if (p.type === 'password') { p.type = 'text'; btn.textContent = '🙈'; } 
+  else { p.type = 'password'; btn.textContent = '️'; }
 }
 
 document.getElementById('toggleAuth').addEventListener('click', () => {
@@ -304,6 +294,7 @@ document.getElementById('toggleAuth').addEventListener('click', () => {
   document.getElementById('toggleAuth').textContent = isSignup ? 'Already have an account? Login' : "Don't have an account? Sign up";
   document.getElementById('nameGroup').style.display = isSignup ? 'block' : 'none';
   document.getElementById('roleGroup').style.display = isSignup ? 'block' : 'none';
+  document.getElementById('confirmPasswordGroup').style.display = isSignup ? 'block' : 'none'; // Show/Hide confirm password
   document.getElementById('authForm').reset();
 });
 
@@ -318,6 +309,13 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
 
   try {
     if (isSignup) {
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      // ✅ NEW: Check if passwords match
+      if (password !== confirmPassword) {
+        showToast('Passwords do not match!', 'error');
+        btn.textContent = originalText; btn.disabled = false; return;
+      }
+      
       const name = document.getElementById('name').value;
       const role = document.getElementById('role').value;
       const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
@@ -326,8 +324,7 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
       const loginRes = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
       const loginData = await loginRes.json();
       if (!loginRes.ok) throw new Error(loginData.error);
-      currentToken = loginData.token;
-      currentUser = loginData.user;
+      currentToken = loginData.token; currentUser = loginData.user;
       localStorage.setItem('reflex_token', currentToken);
       localStorage.setItem('reflex_user', JSON.stringify(currentUser));
       showToast('Account created!', 'success');
@@ -339,19 +336,14 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
         if (res.status === 404) throw new Error('Account does not exist. Please sign up.');
         throw new Error(data.error || 'Login failed');
       }
-      currentToken = data.token;
-      currentUser = data.user;
+      currentToken = data.token; currentUser = data.user;
       localStorage.setItem('reflex_token', currentToken);
       localStorage.setItem('reflex_user', JSON.stringify(currentUser));
       showToast(`Welcome back, ${currentUser.name}!`, 'success');
       showDashboard();
     }
-  } catch (err) {
-    showToast(err.message, 'error');
-  } finally {
-    btn.textContent = originalText;
-    btn.disabled = false;
-  }
+  } catch (err) { showToast(err.message, 'error'); } 
+  finally { btn.textContent = originalText; btn.disabled = false; }
 });
 
 function showToast(message, type = 'info') {
@@ -364,9 +356,7 @@ function showToast(message, type = 'info') {
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
 }
 
-function getAuthHeaders() {
-  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` };
-}
+function getAuthHeaders() { return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` }; }
 
 function showDashboard() {
   document.getElementById('authSection').style.display = 'none';
@@ -388,11 +378,8 @@ function showDashboard() {
 }
 
 function logout() {
-  currentToken = null;
-  currentUser = null;
-  localStorage.removeItem('reflex_token');
-  localStorage.removeItem('reflex_user');
-  // Keep rider selection for convenience
+  currentToken = null; currentUser = null;
+  localStorage.removeItem('reflex_token'); localStorage.removeItem('reflex_user');
   document.querySelectorAll('.dashboard-container').forEach(d => d.style.display = 'none');
   document.getElementById('authSection').style.display = 'block';
   document.getElementById('authForm').reset();
@@ -408,23 +395,14 @@ async function logDelivery() {
   const fee = document.getElementById("deliveryFee").value.trim();
   if (!name || !phone || !address || !item || !itemPrice || !fee) { showToast('Fill all fields', 'warning'); return; }
   try {
-    const res = await fetch("/deliveries", { 
-      method: "POST", 
-      headers: getAuthHeaders(), 
-      body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee }) 
-    });
+    const res = await fetch("/deliveries", { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ customerName: name, customerPhone: phone, address, itemDescription: item, itemPrice, deliveryFee: fee }) });
     if (!res.ok) {
       const err = await res.json();
       if (res.status === 403 || res.status === 401) { showToast('Session expired. Please login again.', 'error'); setTimeout(logout, 1500); return; }
       throw new Error(err.error || 'Failed');
     }
     const delivery = await res.json();
-    document.getElementById("customerName").value = "";
-    document.getElementById("customerPhone").value = "";
-    document.getElementById("address").value = "";
-    document.getElementById("itemDescription").value = "";
-    document.getElementById("itemPrice").value = "";
-    document.getElementById("deliveryFee").value = "";
+    document.getElementById("customerName").value = ""; document.getElementById("customerPhone").value = ""; document.getElementById("address").value = ""; document.getElementById("itemDescription").value = ""; document.getElementById("itemPrice").value = ""; document.getElementById("deliveryFee").value = "";
     showToast(`Delivery ${delivery.id} logged!`, 'success');
     refreshAll();
   } catch (err) { showToast(err.message, 'error'); }
@@ -433,9 +411,7 @@ async function logDelivery() {
 async function acceptDelivery(id) {
   const riderId = document.getElementById("riderSelect").value;
   if (!riderId) { showToast('Select rider identity', 'warning'); return; }
-  // Save selection for next time
   localStorage.setItem('my_rider_id', riderId);
-  
   try {
     const res = await fetch(`/deliveries/${id}/accept`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId }) });
     const result = await res.json();
@@ -516,15 +492,13 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
   if (d.status === "assigned") codes = `<div style="margin-top:8px;"><small>Pickup Code: <span class="code-box">${d.pickupCode}</span></small></div>`;
   else if (d.status === "picked_up") codes = `<div style="margin-top:8px;"><small>Delivery Code: <span class="code-box">${d.deliveryCode}</span></small></div>`;
   const receiptBtn = d.status === 'delivered' ? `<button class="btn-receipt" onclick='showReceipt(${JSON.stringify(d).replace(/'/g,"\\'")})'>🧾 Receipt</button>` : '';
-  
   const cardClass = isHighlighted ? 'delivery-card active-job' : 'delivery-card';
-  
   return `<div class="${cardClass}">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <strong>${d.id} - ${d.customerName}</strong><span class="status status-${d.status}">${d.status.replace("_"," ")}</span>
     </div>
     <small style="display:block; margin-top:4px;">${d.address} — ${d.itemDescription}</small>
-    <div class="delivery-meta"><span>Total: KES ${Number(d.totalAmount).toLocaleString()}</span><span>🕒 ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
+    <div class="delivery-meta"><span>Total: KES ${Number(d.totalAmount).toLocaleString()}</span><span> ${new Date(d.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>${receiptBtn}</div>
     ${codes}${getTimeline(d.status)}${actions}
   </div>`;
 }
@@ -539,7 +513,7 @@ function renderDeliveries(elementId, list, showActions, actionType = null) {
 function updateRiderList() {
   const el = document.getElementById('riderList');
   if (!el) return;
-  el.innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? '<span style="color:#10b981">✅ Available</span>' : '<span style="color:#f59e0b">🚴 On delivery</span>'}</div>`).join('');
+  el.innerHTML = riders.map(r => `<div class="delivery-card">${r.name} (${r.id}) - ${r.available ? '<span style="color:#10b981">✅ Available</span>' : '<span style="color:#f59e0b"> On delivery</span>'}</div>`).join('');
 }
 
 async function refreshAll() {
@@ -566,57 +540,30 @@ async function refreshAll() {
       <div class="stat-card"><div class="stat-value" style="color:#f59e0b">${totalDeliveryFees.toLocaleString()}</div><div class="stat-label">Delivery Fees</div></div>
     `;
     
-    if (currentUser.role === 'retailer') { 
-      document.getElementById('retailerStats').innerHTML = statsHTML; 
-      renderDeliveries('retailerDeliveries', allDeliveries, false); 
-    }
-    if (currentUser.role === 'dispatcher') { 
-      document.getElementById('dispatcherStats').innerHTML = statsHTML; 
-      renderDeliveries('dispatcherDeliveries', allDeliveries, false); 
-      updateRiderList();
-    }
+    if (currentUser.role === 'retailer') { document.getElementById('retailerStats').innerHTML = statsHTML; renderDeliveries('retailerDeliveries', allDeliveries, false); }
+    if (currentUser.role === 'dispatcher') { document.getElementById('dispatcherStats').innerHTML = statsHTML; renderDeliveries('dispatcherDeliveries', allDeliveries, false); updateRiderList(); }
     if (currentUser.role === 'rider') {
       const open = allDeliveries.filter(d => d.status === 'unassigned');
       renderDeliveries('riderOpenRequests', open, true, 'accept');
-      
       let riderId = document.getElementById("riderSelect").value;
-      
-      // Auto-select saved rider if none selected
       if (!riderId) {
         const savedRiderId = localStorage.getItem('my_rider_id');
-        if (savedRiderId) {
-          riderId = savedRiderId;
-          document.getElementById('riderSelect').value = riderId;
-        }
+        if (savedRiderId) { riderId = savedRiderId; document.getElementById('riderSelect').value = riderId; }
       }
-      
       if (riderId) {
-        localStorage.setItem('my_rider_id', riderId); // Ensure it's saved
-        
-        // Find the active job for this rider
+        localStorage.setItem('my_rider_id', riderId);
         const activeJob = allDeliveries.find(d => d.assignedRiderId === riderId && d.status !== 'delivered');
         const activeJobBox = document.getElementById('currentActiveJobBox');
         const activeJobContent = document.getElementById('currentActiveJobContent');
-        
         if (activeJob) {
-          // Show the highlighted active job box
           activeJobBox.style.display = 'block';
           activeJobContent.innerHTML = renderDeliveryCardHTML(activeJob, true, 'action', true);
-          
-          // Show other jobs (if any) below
           const otherJobs = allDeliveries.filter(d => d.assignedRiderId === riderId && d.status !== 'delivered' && d.id !== activeJob.id);
-          if (otherJobs.length > 0) {
-             renderDeliveries('riderActiveJobs', otherJobs, true, 'action');
-          } else {
-             document.getElementById('riderActiveJobs').innerHTML = '';
-          }
+          renderDeliveries('riderActiveJobs', otherJobs, true, 'action');
         } else {
-          // No active job
           activeJobBox.style.display = 'none';
           document.getElementById('riderActiveJobs').innerHTML = '<div class="empty-state"><p>No active jobs. Accept one from Open Requests!</p></div>';
         }
-        
-        // Calculate earnings
         const myEarnings = allDeliveries.filter(d => d.assignedRiderId === riderId && d.status === 'delivered').reduce((s, d) => s + Number(d.deliveryFee||0), 0);
         const myCompleted = allDeliveries.filter(d => d.assignedRiderId === riderId && d.status === 'delivered').length;
         document.getElementById('riderStats').innerHTML = `
