@@ -193,7 +193,7 @@
     <button class="modal-close" onclick="hideReceipt()">×</button>
     <h2>🧾 DELIVERY RECEIPT</h2>
     <div id="receiptContent"></div>
-    <button class="btn-print" onclick="window.print()">🖨️ Print Receipt</button>
+    <button class="btn-print" onclick="window.print()">️ Print Receipt</button>
   </div>
 </div>
 
@@ -227,7 +227,7 @@
   <div class="toggle-auth" id="toggleAuth">Don't have an account? Sign up</div>
 </div>
 
-<div id="retailerDashboard" class="dashboard-container">
+<div id="retailerDashboard" class="dashboard-container" style="display:none;">
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px;">
       <div class="user-avatar" id="retailerAvatar">R</div>
@@ -262,7 +262,7 @@
   </div>
 </div>
 
-<div id="dispatcherDashboard" class="dashboard-container">
+<div id="dispatcherDashboard" class="dashboard-container" style="display:none;">
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px;">
       <div class="user-avatar" id="dispatcherAvatar">D</div>
@@ -288,7 +288,7 @@
   </div>
 </div>
 
-<div id="riderDashboard" class="dashboard-container">
+<div id="riderDashboard" class="dashboard-container" style="display:none;">
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px;">
       <div class="user-avatar" id="riderAvatar">R</div>
@@ -320,7 +320,7 @@
       <div id="riderActiveJobs"></div>
     </div>
     <div class="panel">
-      <h2>📥 Pending Assignments</h2>
+      <h2> Pending Assignments</h2>
       <small style="color:#94a3b8; display:block; margin-bottom:12px;">Deliveries offered to you by the dispatcher</small>
       <div id="riderPendingAssignments"></div>
     </div>
@@ -334,6 +334,7 @@ let currentToken = null, currentUser = null, isSignup = false, allDeliveries = [
 const EYE_ICON = `<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
 const EYE_OFF_ICON = `<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>`;
 
+// ✅ CHECK FOR SAVED LOGIN ON PAGE LOAD
 window.addEventListener('load', () => {
   setTimeout(() => {
     const splash = document.getElementById('splashScreen');
@@ -345,10 +346,6 @@ window.addEventListener('load', () => {
       if (savedToken && savedUser) {
         currentToken = savedToken;
         currentUser = JSON.parse(savedUser);
-        if (currentUser.role === 'rider') {
-          const savedRiderId = localStorage.getItem('my_rider_id');
-          if (savedRiderId) document.getElementById('riderSelect').value = savedRiderId;
-        }
         showDashboard();
       } else {
         document.getElementById('authSection').style.display = 'block';
@@ -412,7 +409,9 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
         if (res.status === 404) throw new Error('Account does not exist. Please sign up.');
         throw new Error(data.error || 'Login failed');
       }
-      currentToken = data.token; currentUser = data.user;
+      // ✅ SAVE TOKEN AND USER - THIS IS THE FIX
+      currentToken = data.token;
+      currentUser = data.user;
       localStorage.setItem('reflex_token', currentToken);
       localStorage.setItem('reflex_user', JSON.stringify(currentUser));
       showToast(`Welcome back, ${currentUser.name}!`, 'success');
@@ -663,15 +662,13 @@ function filterDeliveries() {
 function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = false) {
   let actions = "";
   
-  // Rider actions
   if (showActions && currentUser && currentUser.role === 'rider') {
     const currentRiderId = document.getElementById('riderSelect').value;
     if (d.status === 'pending_acceptance' && d.pendingRiderId === currentRiderId) {
-      // Show BOTH Accept and Decline for pending assignments
       actions = `
         <div style="margin-top:8px; display:flex; gap:8px;">
           <button class="btn-accept" style="flex:1; margin:0;" onclick="acceptDelivery('${d.id}')">✅ Accept</button>
-          <button class="btn-decline" style="flex:1; margin:0;" onclick="openDeclineModal('${d.id}')">❌ Decline</button>
+          <button class="btn-decline" style="flex:1; margin:0;" onclick="openDeclineModal('${d.id}')"> Decline</button>
         </div>
       `;
     } else if (d.status === "assigned") {
@@ -681,7 +678,6 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
     }
   }
   
-  // Dispatcher assign action
   if (currentUser && currentUser.role === 'dispatcher' && d.status === 'unassigned') {
     const availableRiders = riders.filter(r => r.available);
     actions = `
@@ -695,7 +691,6 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
     `;
   }
   
-  // Retailer edit/delete
   let editDeleteBtns = "";
   if (currentUser && currentUser.role === 'retailer' && d.status === 'unassigned') {
     editDeleteBtns = `
@@ -706,7 +701,6 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
     `;
   }
 
-  // Decline history for dispatcher
   let declineHistoryHTML = "";
   if (d.declineHistory && d.declineHistory.length > 0 && currentUser && currentUser.role === 'dispatcher') {
     declineHistoryHTML = `<div class="decline-history"><strong>⚠️ Decline History:</strong><br>${d.declineHistory.map(h => `${h.riderName}: "${h.reason}"`).join('<br>')}</div>`;
@@ -782,11 +776,9 @@ async function refreshAll() {
       if (riderId) {
         localStorage.setItem('my_rider_id', riderId);
         
-        // Pending assignments (offered to this rider)
         const pendingAssignments = allDeliveries.filter(d => d.status === 'pending_acceptance' && d.pendingRiderId === riderId);
         renderDeliveries('riderPendingAssignments', pendingAssignments, true, 'decline');
         
-        // Active jobs (accepted by this rider)
         const activeJob = allDeliveries.find(d => d.assignedRiderId === riderId && d.status !== 'delivered');
         const activeJobBox = document.getElementById('currentActiveJobBox');
         const activeJobContent = document.getElementById('currentActiveJobContent');
