@@ -223,12 +223,12 @@
     </div>
     <div class="form-group" id="roleGroup" style="display:none;"><label>Role</label><select id="role"><option value="retailer">Retailer</option><option value="dispatcher">Dispatcher</option><option value="rider">Rider</option></select></div>
     <button type="submit" id="authBtn">Login</button>
-    <div id="errorMsg" style="color:#ef4444; font-size:14px; margin-top:8px; display:none;"></div>
+    <div id="authError" style="color:#ef4444; font-size:14px; margin-top:8px; display:none;"></div>
   </form>
   <div class="toggle-auth" id="toggleAuth">Don't have an account? Sign up</div>
 </div>
 
-<div id="retailerDashboard" class="dashboard-container" style="display:none;">
+<div id="retailerDashboard" class="dashboard-container">
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px;">
       <div class="user-avatar" id="retailerAvatar">R</div>
@@ -257,13 +257,13 @@
     </div>
     <div class="panel">
       <h2>All Deliveries</h2>
-      <div class="search-bar"><span class="search-icon"></span><input type="text" id="retailerSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="retailerSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
       <div id="retailerDeliveries"></div>
     </div>
   </div>
 </div>
 
-<div id="dispatcherDashboard" class="dashboard-container" style="display:none;">
+<div id="dispatcherDashboard" class="dashboard-container">
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px;">
       <div class="user-avatar" id="dispatcherAvatar">D</div>
@@ -279,7 +279,7 @@
   <div class="main-content two-col-grid">
     <div class="panel">
       <h2>All Deliveries</h2>
-      <div class="search-bar"><span class="search-icon"></span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="dispatcherSearch" placeholder="Search..." oninput="filterDeliveries()"></div>
       <div id="dispatcherDeliveries"></div>
     </div>
     <div class="panel">
@@ -289,7 +289,7 @@
   </div>
 </div>
 
-<div id="riderDashboard" class="dashboard-container" style="display:none;">
+<div id="riderDashboard" class="dashboard-container">
   <div class="header">
     <div style="display:flex; align-items:center; gap:12px;">
       <div class="user-avatar" id="riderAvatar">R</div>
@@ -306,7 +306,7 @@
     <div class="panel">
       <h2>My Active Jobs</h2>
       <div id="currentActiveJobBox" style="display:none; margin-bottom: 20px;">
-        <h3 style="color:#38bdf8; margin-bottom:10px;">🚴 CURRENT DELIVERY</h3>
+        <h3 style="color:#38bdf8; margin-bottom:10px;"> CURRENT DELIVERY</h3>
         <div id="currentActiveJobContent"></div>
       </div>
       <select id="riderSelect" onchange="loadRiderView()">
@@ -352,7 +352,7 @@ window.addEventListener('load', () => {
         document.getElementById('authSection').style.display = 'block';
       }
     }, 600);
-  }, 1000);
+  }, 1500);
 });
 
 socket.on('rider_status_update', (updatedRiders) => {
@@ -375,15 +375,16 @@ document.getElementById('toggleAuth').addEventListener('click', () => {
   document.getElementById('roleGroup').style.display = isSignup ? 'block' : 'none';
   document.getElementById('confirmPasswordGroup').style.display = isSignup ? 'block' : 'none';
   document.getElementById('authForm').reset();
-  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('authError').style.display = 'none';
 });
 
+// ✅ PROVEN LOGIN/SIGNUP LOGIC
 document.getElementById('authForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
   const btn = document.getElementById('authBtn');
-  const errorMsg = document.getElementById('errorMsg');
+  const errorMsg = document.getElementById('authError');
   
   btn.disabled = true;
   btn.textContent = isSignup ? 'Creating...' : 'Logging in...';
@@ -398,36 +399,32 @@ document.getElementById('authForm').addEventListener('submit', async (e) => {
       
       const res = await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Signup failed');
+      if (!res.ok) throw new Error(data.error);
       
-      // Auto-login after signup
       const loginRes = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
       const loginData = await loginRes.json();
-      if (!loginRes.ok) throw new Error(loginData.error || 'Login failed');
+      if (!loginRes.ok) throw new Error(loginData.error);
       
       currentToken = loginData.token;
       currentUser = loginData.user;
       localStorage.setItem('reflex_token', currentToken);
       localStorage.setItem('reflex_user', JSON.stringify(currentUser));
-      showToast('Account created!', 'success');
       showDashboard();
     } else {
       const res = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
       
-      // ✅ SAVE TOKEN AND USER - THIS IS THE FIX
       currentToken = data.token;
       currentUser = data.user;
       localStorage.setItem('reflex_token', currentToken);
       localStorage.setItem('reflex_user', JSON.stringify(currentUser));
-      showToast(`Welcome back, ${currentUser.name}!`, 'success');
       showDashboard();
     }
-  } catch (err) { 
+  } catch (err) {
     errorMsg.textContent = err.message;
     errorMsg.style.display = 'block';
-  } finally { 
+  } finally {
     btn.disabled = false;
     btn.textContent = isSignup ? 'Sign Up' : 'Login';
   }
@@ -500,6 +497,7 @@ function openEditModal(id) {
   const d = allDeliveries.find(x => x.id === id);
   if (!d) return;
   if (d.status !== 'unassigned') { showToast('Cannot edit assigned deliveries', 'error'); return; }
+  
   document.getElementById('editDeliveryId').value = d.id;
   document.getElementById('editName').value = d.customerName;
   document.getElementById('editPhone').value = d.customerPhone;
@@ -507,10 +505,13 @@ function openEditModal(id) {
   document.getElementById('editItem').value = d.itemDescription;
   document.getElementById('editPrice').value = d.itemPrice;
   document.getElementById('editFee').value = d.deliveryFee;
+  
   document.getElementById('editModalOverlay').classList.add('show');
 }
 
-function closeEditModal() { document.getElementById('editModalOverlay').classList.remove('show'); }
+function closeEditModal() {
+  document.getElementById('editModalOverlay').classList.remove('show');
+}
 
 async function saveEdit() {
   const id = document.getElementById('editDeliveryId').value;
@@ -522,7 +523,11 @@ async function saveEdit() {
     itemPrice: document.getElementById('editPrice').value.trim(),
     deliveryFee: document.getElementById('editFee').value.trim()
   };
-  if (!body.customerName || !body.customerPhone || !body.address || !body.itemDescription || !body.itemPrice || !body.deliveryFee) { showToast('Fill all fields', 'warning'); return; }
+  
+  if (!body.customerName || !body.customerPhone || !body.address || !body.itemDescription || !body.itemPrice || !body.deliveryFee) {
+    showToast('Fill all fields', 'warning'); return;
+  }
+
   try {
     const res = await fetch(`/deliveries/${id}`, { method: "PUT", headers: getAuthHeaders(), body: JSON.stringify(body) });
     const result = await res.json();
@@ -549,6 +554,7 @@ async function assignToRider(deliveryId) {
   if (!riderSelect) return;
   const riderId = riderSelect.value;
   if (!riderId) { showToast('Please select a rider first', 'warning'); return; }
+  
   try {
     const res = await fetch(`/deliveries/${deliveryId}/assign`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId }) });
     const result = await res.json();
@@ -579,13 +585,17 @@ function openDeclineModal(id) {
   document.getElementById('declineModalOverlay').classList.add('show');
 }
 
-function closeDeclineModal() { document.getElementById('declineModalOverlay').classList.remove('show'); }
+function closeDeclineModal() {
+  document.getElementById('declineModalOverlay').classList.remove('show');
+}
 
 async function submitDecline() {
   const id = document.getElementById('declineDeliveryId').value;
   const riderId = document.getElementById("riderSelect").value;
   const reason = document.getElementById('declineReason').value.trim();
+  
   if (!reason || reason.length < 5) { showToast('Please provide a reason (min 5 characters)', 'warning'); return; }
+  
   try {
     const res = await fetch(`/deliveries/${id}/decline`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ riderId, reason }) });
     const result = await res.json();
@@ -661,7 +671,6 @@ function filterDeliveries() {
 function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = false) {
   let actions = "";
   
-  // Rider actions
   if (showActions && currentUser && currentUser.role === 'rider') {
     const currentRiderId = document.getElementById('riderSelect').value;
     if (d.status === 'pending_acceptance' && d.pendingRiderId === currentRiderId) {
@@ -678,7 +687,6 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
     }
   }
   
-  // Dispatcher assign action
   if (currentUser && currentUser.role === 'dispatcher' && d.status === 'unassigned') {
     const availableRiders = riders.filter(r => r.available);
     actions = `
@@ -692,7 +700,6 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
     `;
   }
   
-  // Retailer edit/delete
   let editDeleteBtns = "";
   if (currentUser && currentUser.role === 'retailer' && d.status === 'unassigned') {
     editDeleteBtns = `
@@ -703,7 +710,6 @@ function renderDeliveryCardHTML(d, showActions, actionType, isHighlighted = fals
     `;
   }
 
-  // Decline history for dispatcher
   let declineHistoryHTML = "";
   if (d.declineHistory && d.declineHistory.length > 0 && currentUser && currentUser.role === 'dispatcher') {
     declineHistoryHTML = `<div class="decline-history"><strong>⚠️ Decline History:</strong><br>${d.declineHistory.map(h => `${h.riderName}: "${h.reason}"`).join('<br>')}</div>`;
@@ -778,6 +784,7 @@ async function refreshAll() {
       
       if (riderId) {
         localStorage.setItem('my_rider_id', riderId);
+        
         const pendingAssignments = allDeliveries.filter(d => d.status === 'pending_acceptance' && d.pendingRiderId === riderId);
         renderDeliveries('riderPendingAssignments', pendingAssignments, true, 'decline');
         
