@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const fs = require('fs'); // ✅ Added File System to save data
 
 const app = express();
 const server = http.createServer(app);
@@ -13,18 +14,36 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = 'reflex-prototype-secret-key-2026';
+const DATA_FILE = path.join(__dirname, 'database.json');
 
-const users = []; 
-const riders = [
+// ✅ Load data from file, or start fresh if file doesn't exist
+let appData = { users: [], deliveries: [], userIdCounter: 1, deliveryIdCounter: 1 };
+if (fs.existsSync(DATA_FILE)) {
+  try {
+    appData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  } catch (e) { console.log('Starting with fresh database'); }
+}
+
+let users = appData.users;
+let riders = [
   { id: 'r1', name: 'John Rider', available: true },
   { id: 'r2', name: 'Jane Rider', available: true }, 
   { id: 'r3', name: 'Peter Otieno', available: true },
   { id: 'r4', name: 'Faith Nyambura', available: true },
   { id: 'r5', name: 'David Kimani', available: true }
 ];
-const deliveries = []; 
-let deliveryIdCounter = 1;
-let userIdCounter = 1;
+let deliveries = appData.deliveries;
+let userIdCounter = appData.userIdCounter;
+let deliveryIdCounter = appData.deliveryIdCounter;
+
+// ✅ Helper function to save data to file
+function saveDatabase() {
+  appData.users = users;
+  appData.deliveries = deliveries;
+  appData.userIdCounter = userIdCounter;
+  appData.deliveryIdCounter = deliveryIdCounter;
+  fs.writeFileSync(DATA_FILE, JSON.stringify(appData, null, 2));
+}
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -47,6 +66,7 @@ app.post('/auth/signup', async (req, res) => {
     if (users.find(u => u.email === email)) return res.status(400).json({ error: 'Email already exists' });
     const passwordHash = await bcrypt.hash(password, 10);
     users.push({ id: `u${userIdCounter++}`, name, email, passwordHash, role });
+    saveDatabase(); // ✅ Save to file
     res.status(201).json({ message: 'User created' });
   } catch (error) { res.status(500).json({ error: 'Server error' }); }
 });
@@ -69,7 +89,6 @@ app.post('/auth/login', async (req, res) => {
 app.get('/riders', authenticateToken, (req, res) => res.json(riders));
 app.get('/deliveries', authenticateToken, (req, res) => res.json(deliveries));
 
-// Create Delivery
 app.post('/deliveries', authenticateToken, (req, res) => {
   try {
     const { customerName, customerPhone, address, itemDescription, itemPrice, deliveryFee } = req.body;
@@ -86,27 +105,26 @@ app.post('/deliveries', authenticateToken, (req, res) => {
       status: 'unassigned', 
       assignedRiderId: null,
       pendingRiderId: null,
-      declineHistory: [], // Tracks who declined and why
+      declineHistory: [],
       pickupCode: Math.floor(1000 + Math.random() * 9000).toString(),
       deliveryCode: Math.floor(1000 + Math.random() * 9000).toString(),
       createdAt: new Date().toISOString()
     };
     
     deliveries.push(newDelivery);
+    saveDatabase(); // ✅ Save to file
     io.emit('delivery_update', { type: 'created', delivery: newDelivery });
     res.status(201).json(newDelivery);
   } catch (error) { res.status(500).json({ error: 'Failed to create delivery' }); }
 });
 
-// Edit Delivery (Retailer only, if unassigned)
 app.put('/deliveries/:id', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
     const delivery = deliveries.find(d => d.id === id);
     if (!delivery) return res.status(404).json({ error: 'Delivery not found' });
-    if (delivery.status !== 'unassigned') {
-      return res.status(400).json({ error: 'Cannot edit a delivery that has already been assigned.' });
-    }
+    if (delivery.status !== 'unassigned') return res.status(400).json({ error: 'Cannot edit assigned delivery' });
+    
     const { customerName, customerPhone, address, itemDescription, itemPrice, deliveryFee } = req.body;
     delivery.customerName = customerName;
     delivery.customerPhone = customerPhone;
@@ -115,31 +133,29 @@ app.put('/deliveries/:id', authenticateToken, (req, res) => {
     delivery.itemPrice = itemPrice;
     delivery.deliveryFee = deliveryFee;
     delivery.totalAmount = ((Number(itemPrice) || 0) + (Number(deliveryFee) || 0)).toString();
+    saveDatabase(); // ✅ Save to file
     io.emit('delivery_update', { type: 'updated', delivery });
     res.json({ message: 'Updated successfully', delivery });
   } catch (error) { res.status(500).json({ error: 'Failed to update delivery' }); }
 });
 
-// Delete Delivery (Retailer only, if unassigned)
 app.delete('/deliveries/:id', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
     const index = deliveries.findIndex(d => d.id === id);
     if (index === -1) return res.status(404).json({ error: 'Delivery not found' });
-    if (deliveries[index].status !== 'unassigned') {
-      return res.status(400).json({ error: 'Cannot delete a delivery that has already been assigned.' });
-    }
+    if (deliveries[index].status !== 'unassigned') return res.status(400).json({ error: 'Cannot delete assigned delivery' });
+    
     deliveries.splice(index, 1);
+    saveDatabase(); // ✅ Save to file
     io.emit('delivery_update', { type: 'deleted', id });
     res.json({ message: 'Deleted successfully' });
   } catch (error) { res.status(500).json({ error: 'Failed to delete delivery' }); }
 });
 
 // ==========================================
-// DISPATCHER & RIDER WORKFLOW ROUTES
+// DISPATCHER & RIDER WORKFLOW
 // ==========================================
-
-// 1. Dispatcher assigns to a specific rider
 app.post('/deliveries/:id/assign', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -148,20 +164,19 @@ app.post('/deliveries/:id/assign', authenticateToken, (req, res) => {
     const rider = riders.find(r => r.id === riderId);
     
     if (!delivery) return res.status(404).json({ error: 'Delivery not found' });
-    if (delivery.status !== 'unassigned') return res.status(400).json({ error: 'Delivery already assigned or pending' });
+    if (delivery.status !== 'unassigned') return res.status(400).json({ error: 'Delivery already assigned' });
     if (!rider) return res.status(400).json({ error: 'Rider not found' });
-    if (!rider.available) return res.status(400).json({ error: 'Rider is currently busy' });
+    if (!rider.available) return res.status(400).json({ error: 'Rider is busy' });
     
     delivery.status = 'pending_acceptance';
     delivery.pendingRiderId = riderId;
     delivery.pendingAssignedAt = new Date().toISOString();
-    
+    saveDatabase(); // ✅ Save to file
     io.emit('delivery_update', { type: 'assigned_to_rider', delivery, riderId });
     res.json({ message: `Delivery offered to ${rider.name}`, delivery });
-  } catch (error) { res.status(500).json({ error: 'Failed to assign delivery' }); }
+  } catch (error) { res.status(500).json({ error: 'Failed to assign' }); }
 });
 
-// 2. Rider accepts the delivery
 app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -169,23 +184,20 @@ app.post('/deliveries/:id/accept', authenticateToken, (req, res) => {
     const delivery = deliveries.find(d => d.id === id);
     const rider = riders.find(r => r.id === riderId);
     
-    if (!delivery) return res.status(404).json({ error: 'Delivery not found' });
-    if (delivery.status !== 'pending_acceptance') return res.status(400).json({ error: 'Delivery not pending acceptance' });
-    if (delivery.pendingRiderId !== riderId) return res.status(400).json({ error: 'This delivery was not offered to you' });
-    if (!rider) return res.status(400).json({ error: 'Rider not found' });
+    if (!delivery || delivery.status !== 'pending_acceptance') return res.status(400).json({ error: 'Invalid status' });
+    if (delivery.pendingRiderId !== riderId) return res.status(400).json({ error: 'Not offered to you' });
     
     delivery.status = 'assigned';
     delivery.assignedRiderId = riderId;
     delivery.pendingRiderId = null;
     delivery.acceptedAt = new Date().toISOString();
     rider.available = false;
-    
+    saveDatabase(); // ✅ Save to file
     io.emit('delivery_update', { type: 'accepted', delivery, riderStatus: riders });
-    res.json({ message: 'Delivery accepted!', delivery });
-  } catch (error) { res.status(500).json({ error: 'Failed to accept delivery' }); }
+    res.json({ message: 'Accepted!', delivery });
+  } catch (error) { res.status(500).json({ error: 'Failed to accept' }); }
 });
 
-// 3. Rider declines the delivery with a reason
 app.post('/deliveries/:id/decline', authenticateToken, (req, res) => {
   try {
     const { id } = req.params;
@@ -193,48 +205,38 @@ app.post('/deliveries/:id/decline', authenticateToken, (req, res) => {
     const delivery = deliveries.find(d => d.id === id);
     const rider = riders.find(r => r.id === riderId);
     
-    if (!delivery) return res.status(404).json({ error: 'Delivery not found' });
-    if (delivery.status !== 'pending_acceptance') return res.status(400).json({ error: 'Delivery not pending acceptance' });
-    if (delivery.pendingRiderId !== riderId) return res.status(400).json({ error: 'This delivery was not offered to you' });
-    if (!reason || reason.trim().length < 5) return res.status(400).json({ error: 'Please provide a reason (min 5 characters)' });
+    if (!delivery || delivery.status !== 'pending_acceptance') return res.status(400).json({ error: 'Invalid status' });
+    if (delivery.pendingRiderId !== riderId) return res.status(400).json({ error: 'Not offered to you' });
+    if (!reason || reason.trim().length < 5) return res.status(400).json({ error: 'Reason required (min 5 chars)' });
     
-    // Log the decline history for the dispatcher to see
-    delivery.declineHistory.push({
-      riderId,
-      riderName: rider ? rider.name : 'Unknown',
-      reason: reason.trim(),
-      declinedAt: new Date().toISOString()
-    });
-    
-    // Reset to unassigned so another rider can be chosen
+    delivery.declineHistory.push({ riderId, riderName: rider?.name || 'Unknown', reason: reason.trim(), declinedAt: new Date().toISOString() });
     delivery.status = 'unassigned';
     delivery.pendingRiderId = null;
-    delivery.pendingAssignedAt = null;
-    
+    saveDatabase(); // ✅ Save to file
     io.emit('delivery_update', { type: 'declined', delivery, riderStatus: riders });
-    res.json({ message: 'Delivery declined', delivery });
-  } catch (error) { res.status(500).json({ error: 'Failed to decline delivery' }); }
+    res.json({ message: 'Declined', delivery });
+  } catch (error) { res.status(500).json({ error: 'Failed to decline' }); }
 });
 
-// 4. Rider confirms pickup
 app.post('/deliveries/:id/pickup', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { pickupCode } = req.body;
   const delivery = deliveries.find(d => d.id === id);
   if (!delivery || delivery.status !== 'assigned') return res.status(400).json({ error: 'Invalid status' });
-  if (delivery.pickupCode !== pickupCode) return res.status(400).json({ error: 'Invalid pickup code' });
+  if (delivery.pickupCode !== pickupCode) return res.status(400).json({ error: 'Invalid code' });
+  
   delivery.status = 'picked_up';
+  saveDatabase(); // ✅ Save to file
   io.emit('delivery_update', { type: 'picked_up', delivery, riderStatus: riders });
   res.json({ message: 'Pickup confirmed', delivery });
 });
 
-// 5. Rider confirms delivery
 app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { confirmationCode } = req.body;
   const delivery = deliveries.find(d => d.id === id);
   if (!delivery || delivery.status !== 'picked_up') return res.status(400).json({ error: 'Must be picked up first' });
-  if (delivery.deliveryCode !== confirmationCode) return res.status(400).json({ error: 'Invalid delivery code' });
+  if (delivery.deliveryCode !== confirmationCode) return res.status(400).json({ error: 'Invalid code' });
   
   delivery.status = 'delivered';
   if (delivery.assignedRiderId) {
@@ -244,12 +246,13 @@ app.post('/deliveries/:id/confirm', authenticateToken, (req, res) => {
       io.emit('rider_available', { riderId: rider.id, riderName: rider.name });
     }
   }
+  saveDatabase(); // ✅ Save to file
   io.emit('delivery_update', { type: 'confirmed', delivery, riderStatus: riders });
   res.json({ message: 'Completed', delivery });
 });
 
 // ==========================================
-// SOCKET.IO & SERVER START
+// SOCKET.IO & START
 // ==========================================
 setInterval(() => { io.emit('rider_status_update', riders); }, 5000);
 
